@@ -552,7 +552,8 @@ function doLogout(){
   db.style.opacity='0';db.style.transition='opacity .3s ease';
   setTimeout(()=>{
     db.classList.remove('active');db.style.opacity='';db.style.transition='';
-    document.getElementById('scrLogin').classList.add('active');
+    document.getElementById('scrLogin').classList.add('active');document.getElementById('scrLogin').style.opacity='1';
+document.getElementById('scrLogin').style.display='flex';
     document.getElementById('staff-pw').value='';
     document.getElementById('cl-email').value='';document.getElementById('cl-pw').value='';
     document.querySelectorAll('.ucard').forEach(c=>c.classList.remove('sel'));
