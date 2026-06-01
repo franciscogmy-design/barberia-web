@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Barber Urban — Sistema Completo</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;900&display=swap" rel="stylesheet"/>
+<!-- Supabase JS v2 -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#080808;--bg2:#0f0f0f;--bg3:#161616;--bg4:#1e1e1e;--bg5:#252525;
+  --or:#ff6500;--or2:#ff8c30;--or3:#ffb060;
+  --cy:#00d4ff;--ye:#ffd600;--gr:#22c55e;--re:#ef4444;--pu:#a855f7;
+  --wh:#f0f0f0;--gy:#777;--gy2:#333;--bd:#252525;--sh:rgba(255,101,0,0.15);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--bg);color:var(--wh);overflow:hidden;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes slideR{from{transform:translateX(-100%);}to{transform:translateX(0);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-7px);}75%{transform:translateX(7px);}}
+@keyframes pop{from{transform:scale(.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 rgba(255,101,0,0);}50%{box-shadow:0 0 22px rgba(255,101,0,.35);}}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+
+.screen{position:fixed;inset:0;z-index:100;display:none;}
+.screen.active{display:flex;}
+
+/* ── LOADER ── */
+#scrLoader{align-items:center;justify-content:center;background:var(--bg);flex-direction:column;gap:16px;}
+.loader-logo{font-family:'Bebas Neue',sans-serif;font-size:2.8rem;letter-spacing:.08em;}
+.loader-logo span{color:var(--or);}
+.spinner{width:36px;height:36px;border:3px solid var(--bd);border-top-color:var(--or);border-radius:50%;animation:spin .8s linear infinite;}
+.loader-txt{font-size:.76rem;color:var(--gy);letter-spacing:.1em;text-transform:uppercase;}
+
+/* ── LOGIN ── */
+#scrLogin{align-items:center;justify-content:center;background:var(--bg);}
+.login-glow{position:absolute;inset:0;background:radial-gradient(ellipse 55% 55% at 50% 40%,rgba(255,101,0,.07) 0%,transparent 70%);pointer-events:none;}
+.login-gridlines{position:absolute;inset:0;background-image:linear-gradient(rgba(255,101,0,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,101,0,.03) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;}
+.lbox{position:relative;z-index:2;background:var(--bg3);border:1px solid var(--bd);border-radius:20px;padding:40px 36px;width:100%;max-width:420px;box-shadow:0 24px 80px rgba(0,0,0,.6);animation:fadeUp .6s ease;}
+.llogo{text-align:center;margin-bottom:24px;}
+.llogo-t{font-family:'Bebas Neue',sans-serif;font-size:2.4rem;letter-spacing:.08em;}
+.llogo-t span{color:var(--or);}
+.llogo p{font-size:.72rem;color:var(--gy);letter-spacing:.14em;text-transform:uppercase;margin-top:3px;}
+.ltabs{display:flex;background:var(--bg4);border-radius:10px;padding:4px;margin-bottom:20px;gap:4px;}
+.ltab{flex:1;padding:9px;border-radius:7px;border:none;background:transparent;color:var(--gy);font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.ltab.active{background:var(--or);color:#fff;box-shadow:0 2px 10px var(--sh);}
+.ltab-panel{display:none;}
+.ltab-panel.active{display:block;animation:fadeIn .3s ease;}
+.ucards{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.ucard{background:var(--bg4);border:1px solid var(--bd);border-radius:11px;padding:12px 14px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:12px;}
+.ucard:hover{border-color:rgba(255,101,0,.4);}
+.ucard.sel{border-color:var(--or);background:rgba(255,101,0,.07);}
+.uca{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+.ucn{font-weight:700;font-size:.86rem;}
+.ucr{font-size:.67rem;margin-top:1px;}
+.ucb{font-size:.56rem;font-weight:700;letter-spacing:.1em;padding:2px 7px;border-radius:100px;margin-left:auto;flex-shrink:0;}
+.bcj{background:rgba(255,214,0,.1);color:var(--ye);border:1px solid rgba(255,214,0,.25);}
+.bcb{background:rgba(255,101,0,.1);color:var(--or3);border:1px solid rgba(255,101,0,.2);}
+.lfield{display:flex;flex-direction:column;gap:5px;margin-bottom:13px;}
+.llbl{font-size:.67rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gy);}
+.linput{background:var(--bg4);border:1px solid var(--bd);color:var(--wh);font-family:'Outfit',sans-serif;font-size:.86rem;padding:11px 14px;outline:none;border-radius:9px;transition:all .2s;width:100%;}
+.linput:focus{border-color:var(--or);box-shadow:0 0 0 3px rgba(255,101,0,.1);}
+.linput::placeholder{color:var(--gy2);}
+.linput.err{border-color:var(--re);animation:shake .4s ease;}
+.lbtn{width:100%;background:linear-gradient(135deg,var(--or),var(--or2));color:#fff;border:none;padding:13px;font-family:'Outfit',sans-serif;font-size:.88rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border-radius:10px;box-shadow:0 4px 20px var(--sh);margin-top:5px;animation:glow 3s infinite;}
+.lbtn:hover{transform:translateY(-1px);}
+.lbtn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.lerr{font-size:.72rem;color:var(--re);text-align:center;margin-top:7px;min-height:16px;}
+.lhint{font-size:.68rem;color:var(--gy);text-align:center;margin-top:9px;line-height:1.7;}
+.lhint strong{color:var(--or3);}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* ── DASHBOARD ── */
+#scrDash{display:none;height:100vh;overflow:hidden;}
+#scrDash.active{display:flex;}
+.sidebar{width:234px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--bd);display:flex;flex-direction:column;height:100vh;animation:slideR .4s ease;}
+.sb-logo{padding:18px 16px;border-bottom:1px solid var(--bd);}
+.sb-logo-t{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:.06em;}
+.sb-logo-t span{color:var(--or);}
+.sb-logo p{font-size:.6rem;color:var(--gy);letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.sb-db-badge{font-size:.58rem;background:rgba(34,197,94,.1);color:var(--gr);border:1px solid rgba(34,197,94,.2);padding:2px 7px;border-radius:100px;margin-top:6px;display:inline-block;}
+.sb-me{padding:13px 15px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;}
+.sb-av{width:35px;height:35px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.sb-nm{font-weight:700;font-size:.8rem;}
+.sb-rl{font-size:.6rem;margin-top:1px;}
+.sb-nav{flex:1;padding:10px 8px;overflow-y:auto;}
+.sb-sec{font-size:.57rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gy2);padding:8px 10px 5px;}
+.sbi{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:8px;cursor:pointer;transition:all .2s;margin-bottom:2px;font-size:.79rem;color:var(--gy);}
+.sbi:hover{background:var(--bg3);color:var(--wh);}
+.sbi.active{background:rgba(255,101,0,.1);color:var(--or);border:1px solid rgba(255,101,0,.15);}
+.sbi .ic{width:17px;text-align:center;font-size:.84rem;}
+.sbi .nb{margin-left:auto;background:var(--or);color:#fff;font-size:.57rem;font-weight:700;padding:2px 6px;border-radius:100px;}
+.sb-bot{padding:12px;border-top:1px solid var(--bd);}
+.sb-out{display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:8px;cursor:pointer;font-size:.75rem;color:var(--gy);transition:all .2s;}
+.sb-out:hover{background:rgba(239,68,68,.08);color:var(--re);}
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{height:52px;background:var(--bg2);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;padding:0 22px;flex-shrink:0;}
+.tb-l{display:flex;align-items:center;gap:10px;}
+.tb-title{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.04em;}
+.tb-chip{font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:3px 9px;border-radius:100px;}
+.tc-admin{background:rgba(255,214,0,.1);color:var(--ye);border:1px solid rgba(255,214,0,.2);}
+.tc-barber{background:rgba(255,101,0,.1);color:var(--or3);border:1px solid rgba(255,101,0,.15);}
+.tc-client{background:rgba(0,212,255,.1);color:var(--cy);border:1px solid rgba(0,212,255,.2);}
+.tb-r{display:flex;align-items:center;gap:12px;}
+.live{display:flex;align-items:center;gap:5px;font-size:.69rem;color:var(--gr);}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--gr);animation:pulse 2s infinite;}
+.db-live{font-size:.65rem;color:var(--cy);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);padding:2px 8px;border-radius:100px;}
+.clk{font-size:.74rem;color:var(--gy);}
+.content{flex:1;overflow-y:auto;padding:22px;}
+.content::-webkit-scrollbar{width:4px;}
+.content::-webkit-scrollbar-thumb{background:var(--bd);}
+.page{display:none;animation:fadeUp .35s ease;}
+.page.active{display:block;}
+.bsm{background:var(--bg4);border:1px solid var(--bd);color:var(--gy);padding:7px 13px;font-family:'Outfit',sans-serif;font-size:.71rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border-radius:7px;transition:all .2s;}
+.bsm:hover{border-color:var(--or);color:var(--or);}
+.bsm.pri{background:var(--or);border-color:var(--or);color:#fff;}
+.bsm.pri:hover{background:var(--or2);}
+.bsm.dan{border-color:rgba(239,68,68,.3);color:var(--re);}
+.bsm.dan:hover{background:rgba(239,68,68,.08);}
+.bsm:disabled{opacity:.4;cursor:not-allowed;}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;}
+.sec-hd h3{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.04em;}
+.stats-row{display:grid;gap:13px;margin-bottom:20px;}
+.sc{background:var(--bg3);border:1px solid var(--bd);border-radius:11px;padding:17px;position:relative;overflow:hidden;transition:all .2s;}
+.sc:hover{transform:translateY(-2px);}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ac,var(--or));}
+.sc-ic{font-size:1.4rem;margin-bottom:7px;}
+.sc-n{font-family:'Bebas Neue',sans-serif;font-size:2rem;line-height:1;color:var(--ac,var(--or));}
+.sc-l{font-size:.67rem;color:var(--gy);text-transform:uppercase;letter-spacing:.1em;margin-top:2px;}
+.tw{background:var(--bg3);border:1px solid var(--bd);border-radius:11px;overflow:hidden;}
+.tf{padding:13px 17px;border-bottom:1px solid var(--bd);display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.fi2{background:var(--bg4);border:1px solid var(--bd);color:var(--wh);font-family:'Outfit',sans-serif;font-size:.77rem;padding:7px 11px;border-radius:7px;outline:none;transition:border-color .2s;}
+.fi2:focus{border-color:var(--or);}
+.fi2::placeholder{color:var(--gy2);}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:var(--bg4);border-bottom:1px solid var(--bd);}
+th{padding:10px 14px;font-size:.63rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gy);text-align:left;}
+tbody tr{border-bottom:1px solid var(--bd);transition:background .15s;}
+tbody tr:hover{background:var(--bg4);}
+tbody tr:last-child{border:none;}
+td{padding:11px 14px;font-size:.79rem;}
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:.61rem;font-weight:700;letter-spacing:.08em;padding:3px 7px;border-radius:100px;}
+.cg{background:rgba(34,197,94,.1);color:var(--gr);border:1px solid rgba(34,197,94,.2);}
+.co{background:rgba(255,101,0,.1);color:var(--or3);border:1px solid rgba(255,101,0,.2);}
+.cy2{background:rgba(0,212,255,.1);color:var(--cy);border:1px solid rgba(0,212,255,.2);}
+.cy3{background:rgba(255,214,0,.1);color:var(--ye);border:1px solid rgba(255,214,0,.2);}
+.srv-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:17px;}
+.sp{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px 11px;cursor:pointer;transition:all .2s;position:relative;text-align:center;}
+.sp::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--or),var(--ye));transform:scaleX(0);transform-origin:left;transition:transform .3s;}
+.sp:hover{border-color:rgba(255,101,0,.4);transform:translateY(-3px);}
+.sp:hover::after,.sp.sel::after{transform:scaleX(1);}
+.sp.sel{border-color:var(--or);background:rgba(255,101,0,.07);}
+.sp-icon{font-size:1.7rem;margin-bottom:7px;}
+.sp-name{font-size:.75rem;font-weight:700;margin-bottom:4px;}
+.sp-price{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;color:var(--or);}
+.sp-dur{font-size:.6rem;color:var(--gy);margin-top:2px;}
+.sp-chk{position:absolute;top:7px;right:7px;width:19px;height:19px;border-radius:50%;background:var(--or);display:flex;align-items:center;justify-content:center;font-size:.58rem;opacity:0;transition:opacity .2s;}
+.sp.sel .sp-chk{opacity:1;}
+.barber-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:17px;}
+.bp{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px;cursor:pointer;transition:all .2s;text-align:center;position:relative;}
+.bp:hover,.bp.sel{border-color:rgba(255,101,0,.4);background:rgba(255,101,0,.05);}
+.bp.sel{border-color:var(--or);}
+.bp-av{width:50px;height:50px;border-radius:50%;margin:0 auto 9px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;}
+.bp-name{font-weight:700;font-size:.8rem;margin-bottom:2px;}
+.bp-role{font-size:.63rem;color:var(--or3);}
+.bp-avail{font-size:.63rem;color:var(--gr);margin-top:5px;display:flex;align-items:center;justify-content:center;gap:4px;}
+.bp-avail::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--gr);display:block;}
+.bp-sel-badge{position:absolute;top:6px;right:6px;background:var(--or);color:#fff;font-size:.56rem;font-weight:700;padding:2px 5px;border-radius:100px;opacity:0;transition:opacity .2s;}
+.bp.sel .bp-sel-badge{opacity:1;}
+.date-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:15px;}
+.date-chips::-webkit-scrollbar{height:3px;}
+.date-chips::-webkit-scrollbar-thumb{background:var(--or);}
+.dc{flex-shrink:0;width:52px;padding:8px 4px;border-radius:8px;background:var(--bg4);border:1px solid var(--bd);color:var(--gy);cursor:pointer;transition:all .15s;text-align:center;}
+.dc .dn{font-size:.54rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px;}
+.dc .dd{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;line-height:1;}
+.dc:hover:not(.dis){border-color:var(--or);color:var(--wh);}
+.dc.sel{background:var(--or);border-color:var(--or);color:#fff;}
+.dc.dis{opacity:.25;cursor:not-allowed;}
+.slots-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:17px;}
+.sl{padding:7px 11px;border-radius:7px;background:var(--bg4);border:1px solid var(--bd);color:var(--gy);font-size:.74rem;font-weight:600;cursor:pointer;transition:all .15s;}
+.sl:hover:not(.tk){border-color:var(--or);color:var(--wh);}
+.sl.sel{background:var(--or);border-color:var(--or);color:#fff;}
+.sl.tk{opacity:.22;cursor:not-allowed;text-decoration:line-through;}
+.bs-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd);font-size:.79rem;}
+.bs-row:last-of-type{border:none;}
+.bs-key{color:var(--gy);}
+.bs-val{font-weight:600;}
+.total-big{background:rgba(255,101,0,.07);border:1px solid rgba(255,101,0,.2);border-radius:9px;padding:13px;text-align:center;margin:13px 0;}
+.total-big .ta{font-size:.64rem;color:var(--gy);text-transform:uppercase;letter-spacing:.1em;}
+.total-big .tn{font-family:'Bebas Neue',sans-serif;font-size:2.4rem;color:var(--or);line-height:1;}
+.pay-opts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px;}
+.po{background:var(--bg4);border:1px solid var(--bd);border-radius:9px;padding:13px;cursor:pointer;transition:all .2s;text-align:center;}
+.po:hover,.po.sel{border-color:var(--or);background:rgba(255,101,0,.06);}
+.po-ic{font-size:1.4rem;margin-bottom:4px;}
+.po-lbl{font-size:.7rem;font-weight:700;}
+.po.sel .po-lbl{color:var(--or);}
+.transfer-detail{background:var(--bg4);border:1px solid var(--bd);border-radius:9px;padding:14px;font-size:.74rem;margin-bottom:11px;animation:fadeUp .3s ease;}
+.transfer-detail h4{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--or);margin-bottom:9px;}
+.tr2{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd);}
+.tr2:last-of-type{border:none;}
+.tr2 .tk2{color:var(--gy);}
+.cpb{background:rgba(255,101,0,.1);border:1px solid rgba(255,101,0,.2);color:var(--or3);font-size:.58rem;padding:2px 6px;border-radius:4px;cursor:pointer;margin-left:5px;}
+.cpb:hover{background:var(--or);color:#fff;}
+.moverlay{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:1500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:fadeIn .2s ease;}
+.moverlay.hidden{display:none;}
+.mbox{background:var(--bg3);border:1px solid var(--bd);border-radius:16px;padding:28px;max-width:460px;width:90%;animation:pop .35s cubic-bezier(.34,1.56,.64,1);}
+.mbox h3{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:.04em;color:var(--or);margin-bottom:13px;}
+.mbox p{font-size:.8rem;color:var(--gy);line-height:1.7;margin-bottom:15px;}
+.mdetail{background:var(--bg4);border:1px solid var(--bd);border-radius:9px;padding:15px;margin-bottom:17px;}
+.mdr{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bd);font-size:.79rem;}
+.mdr:last-of-type{border:none;}
+.mdr .mk{color:var(--gy);}
+.mdr .mv{font-weight:700;}
+.pay-remind{background:rgba(255,101,0,.07);border:1px solid rgba(255,101,0,.2);border-radius:8px;padding:11px;font-size:.74rem;line-height:1.6;margin-bottom:15px;}
+.pay-remind strong{color:var(--or);}
+.toast{position:fixed;bottom:22px;right:22px;z-index:3000;background:var(--bg3);border:1px solid var(--bd);border-left:3px solid var(--or);border-radius:10px;padding:12px 18px;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,.5);transform:translateX(120%);transition:transform .4s cubic-bezier(.34,1.56,.64,1);}
+.toast.show{transform:translateX(0);}
+.toast strong{display:block;color:var(--or);margin-bottom:2px;font-size:.84rem;}
+.toast p{font-size:.72rem;color:var(--gy);}
+.toast.err-toast{border-left-color:var(--re);}
+.toast.err-toast strong{color:var(--re);}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"><strong id="tt"></strong><p id="tm"></p></div>
+
+<!-- MODAL CONFIRMACION -->
+<div class="moverlay hidden" id="mConfirm">
+  <div class="mbox" style="text-align:center;">
+    <div style="font-size:3rem;margin-bottom:11px;animation:pop .5s .2s cubic-bezier(.34,1.56,.64,1) both;">✅</div>
+    <h3>¡Hora Confirmada!</h3>
+    <p>Tu reserva fue registrada en Supabase exitosamente.</p>
+    <div class="mdetail" id="mConfirmDetails"></div>
+    <div class="pay-remind" id="mConfirmPay"></div>
+    <button class="bsm pri" style="width:100%;padding:12px;" onclick="closeM('mConfirm')">Perfecto, ¡nos vemos! ✂</button>
+  </div>
+</div>
+
+<!-- MODAL NUEVA RESERVA MANUAL -->
+<div class="moverlay hidden" id="mNewBook">
+  <div class="mbox">
+    <h3>➕ Nueva Reserva Manual</h3>
+    <div class="fr2">
+      <div class="lfield"><label class="llbl">Nombre *</label><input type="text" class="linput" id="mn-name" placeholder="Nombre cliente"/></div>
+      <div class="lfield"><label class="llbl">Teléfono *</label><input type="text" class="linput" id="mn-phone" placeholder="+56 9..."/></div>
+    </div>
+    <div class="lfield"><label class="llbl">Servicio *</label>
+      <select class="linput" id="mn-srv">
+        <option value="">— Servicio —</option>
+        <option value="Barba|4000|30 min">🪒 Barba — $4.000</option>
+        <option value="Corte Clásico / Escolar|6000|40 min">✂️ Corte Clásico / Escolar — $6.000</option>
+        <option value="Bebés (menores de 3 años)|8000|30 min">👶 Bebés — $8.000</option>
+        <option value="Degradé (Fade)|10000|50 min">💈 Degradé — $10.000</option>
+        <option value="Corte + Barba|14000|60 min">⚡ Corte + Barba — $14.000</option>
+        <option value="Cejas|2000|15 min">✨ Cejas — $2.000</option>
+        <option value="Diseño|2000|20 min">🎨 Diseño — desde $2.000</option>
+      </select>
+    </div>
+    <div class="fr2">
+      <div class="lfield"><label class="llbl">Barbero *</label>
+        <select class="linput" id="mn-barber">
+          <option value="">— Barbero —</option>
+          <option>Karen Monsalve</option><option>Ignacio Pérez</option><option>Franco Jaramillo</option>
+        </select>
+      </div>
+      <div class="lfield"><label class="llbl">Hora *</label>
+        <select class="linput" id="mn-time">
+          <option>09:00</option><option>09:30</option><option>10:00</option><option>10:30</option>
+          <option>11:00</option><option>11:30</option><option>12:00</option><option>12:30</option>
+          <option>14:00</option><option>14:30</option><option>15:00</option><option>15:30</option>
+          <option>16:00</option><option>16:30</option><option>17:00</option><option>17:30</option>
+        </select>
+      </div>
+    </div>
+    <div class="lfield"><label class="llbl">Pago</label>
+      <select class="linput" id="mn-pay"><option value="transfer">🏦 Transferencia</option><option value="local">💵 En local</option></select>
+    </div>
+    <div style="display:flex;gap:9px;margin-top:4px;">
+      <button class="bsm pri" style="flex:1;padding:11px;" id="mnSaveBtn" onclick="saveManualBooking()">Guardar en Supabase</button>
+      <button class="bsm" style="padding:11px 17px;" onclick="closeM('mNewBook')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADER -->
+<div id="scrLoader" class="screen active">
+  <div class="loader-logo">BARBER<span>URBAN</span></div>
+  <div class="spinner"></div>
+  <div class="loader-txt" id="loaderTxt">Conectando a Supabase...</div>
+</div>
+
+<!-- LOGIN -->
+<div id="scrLogin" class="screen">
+  <div class="login-glow"></div>
+  <div class="login-gridlines"></div>
+  <div class="lbox">
+    <div class="llogo">
+      <div class="llogo-t">BARBER<span>URBAN</span></div>
+      <p>Sistema de reservas · Supabase</p>
+    </div>
+    <div class="ltabs">
+      <button class="ltab active" onclick="switchTab('client',this)">👤 Soy cliente</button>
+      <button class="ltab" onclick="switchTab('staff',this)">✂ Soy staff</button>
+    </div>
+    <div class="ltab-panel active" id="tab-client">
+      <p style="font-size:.74rem;color:var(--gy);margin-bottom:14px;line-height:1.6;">Ingresa para agendar tu hora o regístrate si es tu primera vez.</p>
+      <div class="ltabs" style="margin-bottom:14px;">
+        <button class="ltab active" onclick="switchSubTab('login',this)">Ingresar</button>
+        <button class="ltab" onclick="switchSubTab('register',this)">Registrarse</button>
+      </div>
+      <div id="sub-login" class="ltab-panel active">
+        <div class="lfield"><label class="llbl">Correo</label><input type="email" class="linput" id="cl-email" placeholder="tu@correo.cl" onkeydown="if(event.key==='Enter')loginClient()"/></div>
+        <div class="lfield"><label class="llbl">Contraseña</label><input type="password" class="linput" id="cl-pw" placeholder="Tu contraseña" onkeydown="if(event.key==='Enter')loginClient()"/></div>
+        <button class="lbtn" id="clientLoginBtn" onclick="loginClient()">Ingresar →</button>
+      </div>
+      <div id="sub-register" class="ltab-panel">
+        <div class="fr2">
+          <div class="lfield"><label class="llbl">Nombre *</label><input type="text" class="linput" id="rg-name" placeholder="Tu nombre"/></div>
+          <div class="lfield"><label class="llbl">Teléfono *</label><input type="tel" class="linput" id="rg-phone" placeholder="+56 9..."/></div>
+        </div>
+        <div class="lfield"><label class="llbl">Correo *</label><input type="email" class="linput" id="rg-email" placeholder="tu@correo.cl"/></div>
+        <div class="lfield"><label class="llbl">Contraseña *</label><input type="password" class="linput" id="rg-pw" placeholder="Mínimo 6 caracteres"/></div>
+        <button class="lbtn" id="clientRegBtn" onclick="registerClient()">Crear cuenta →</button>
+      </div>
+      <div class="lerr" id="clientErr"></div>
+    </div>
+    <div class="ltab-panel" id="tab-staff">
+      <div class="ucards">
+        <div class="ucard" data-uid="karen" onclick="selStaff(this)">
+          <div class="uca" style="background:linear-gradient(135deg,#2a0020,#400030);">💇‍♀️</div>
+          <div><div class="ucn">Karen Monsalve</div><div class="ucr" style="color:var(--ye);">👑 Senior Barber · Administradora</div></div>
+          <div class="ucb bcj">JEFA</div>
+        </div>
+        <div class="ucard" data-uid="ignacio" onclick="selStaff(this)">
+          <div class="uca" style="background:linear-gradient(135deg,#08101a,#101830);">✂️</div>
+          <div><div class="ucn">Ignacio Pérez</div><div class="ucr" style="color:var(--or3);">Barber</div></div>
+          <div class="ucb bcb">BARBER</div>
+        </div>
+        <div class="ucard" data-uid="franco" onclick="selStaff(this)">
+          <div class="uca" style="background:linear-gradient(135deg,#001008,#001e10);">💈</div>
+          <div><div class="ucn">Franco Jaramillo</div><div class="ucr" style="color:var(--or3);">Barber</div></div>
+          <div class="ucb bcb">BARBER</div>
+        </div>
+      </div>
+      <div class="lfield"><label class="llbl">Contraseña</label>
+        <input type="password" class="linput" id="staff-pw" placeholder="Ingresa tu contraseña" onkeydown="if(event.key==='Enter')loginStaff()"/>
+      </div>
+      <button class="lbtn" id="staffLoginBtn" onclick="loginStaff()">Ingresar al panel →</button>
+      <div class="lerr" id="staffErr"></div>
+      <div class="lhint">Demo: <strong>Karen</strong>: karen2025 · <strong>Ignacio</strong>: igna123 · <strong>Franco</strong>: franco123</div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="scrDash" class="screen">
+  <div class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-t">BARBER<span>URBAN</span></div>
+      <p>Panel v4</p>
+      <div class="sb-db-badge">🟢 Supabase conectado</div>
+    </div>
+    <div class="sb-me" id="sbMe"></div>
+    <nav class="sb-nav" id="sbNav"></nav>
+    <div class="sb-bot"><div class="sb-out" onclick="doLogout()"><span>🚪</span> Cerrar sesión</div></div>
+  </div>
+  <div class="main-area">
+    <div class="topbar">
+      <div class="tb-l">
+        <div class="tb-title" id="tbTitle">INICIO</div>
+        <div id="tbChip"></div>
+      </div>
+      <div class="tb-r">
+        <div class="live"><div class="ldot"></div>EN VIVO</div>
+        <div class="db-live">🔴 Supabase</div>
+        <div class="clk" id="clk"></div>
+        <button class="bsm pri" id="tbNewBtn" style="display:none;" onclick="openM('mNewBook')">+ Nueva reserva</button>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════
+   BARBER URBAN v4 — SUPABASE INTEGRATION
+   Proyecto: barber-dashboard (vnsfjhjqdqygwhzmjpea)
+══════════════════════════════════════════════ */
+
+const SB_URL = 'https://vnsfjhjqdqygwhzmjpea.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuc2ZqaGpxZHF5Z3doem1qcGVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMTc1NDEsImV4cCI6MjA5NTU5MzU0MX0.M50Gwf-yhpGxkPF454oCFCqvrVA54s_o05VhiKed-f8';
+
+const { createClient } = supabase;
+const DB = createClient(SB_URL, SB_KEY);
+
+/* ── STATIC DATA ── */
+const SERVICES = [
+  {id:'s1',name:'Barba',                    icon:'🪒',price:4000, dur:'30 min'},
+  {id:'s2',name:'Corte Clásico / Escolar',  icon:'✂️',price:6000, dur:'40 min'},
+  {id:'s3',name:'Bebés (< 3 años)',          icon:'👶',price:8000, dur:'30 min'},
+  {id:'s4',name:'Degradé (Fade)',            icon:'💈',price:10000,dur:'50 min'},
+  {id:'s5',name:'Corte + Barba',             icon:'⚡',price:14000,dur:'60 min'},
+  {id:'s6',name:'Cejas',                     icon:'✨',price:2000, dur:'15 min'},
+  {id:'s7',name:'Diseño',                    icon:'🎨',price:2000, dur:'20 min'},
+];
+const BARBERS = [
+  {id:'b1',name:'Karen Monsalve',  icon:'💇‍♀️',spec:'Degradés, Diseños, Cejas, Bebés'},
+  {id:'b2',name:'Ignacio Pérez',   icon:'✂️', spec:'Clásicos, Escolares, Barba, Fade'},
+  {id:'b3',name:'Franco Jaramillo',icon:'💈', spec:'Corte+Barba, Diseños, Cejas, Fade'},
+];
+const TIMES = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30',
+               '14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00'];
+const DAYS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+/* ── STATE ── */
+let CU = null;
+let BOOKINGS = [];
+let CLIENTS  = [];
+let STAFF_MAP = {};
+let SEL_STAFF = null;
+let ATTEMPTS  = {count:0, blockedUntil:0};
+let BOOK_STATE = {srv:null,barber:null,date:null,time:null,pay:'transfer'};
+
+/* ════════════ INIT ════════════ */
+async function init() {
+  setLoader('Cargando staff...');
+  try {
+    const {data: staffData, error} = await DB.from('staff').select('*');
+    if (error) throw error;
+    staffData.forEach(s => { STAFF_MAP[s.id] = s; });
+    setLoader('Listo ✓');
+    setTimeout(() => showScreen('login'), 600);
+  } catch(e) {
+    setLoader('Error: ' + e.message);
+    setTimeout(() => showScreen('login'), 2000);
+  }
+}
+
+function setLoader(txt) { document.getElementById('loaderTxt').textContent = txt; }
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  if (name === 'login')  document.getElementById('scrLogin').classList.add('active');
+  if (name === 'dash')   document.getElementById('scrDash').classList.add('active');
+  if (name === 'loader') document.getElementById('scrLoader').classList.add('active');
+}
+
+/* ── CLOCK ── */
+setInterval(() => {
+  const el = document.getElementById('clk'); if (!el) return;
+  const n = new Date();
+  el.textContent = n.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) + ' · ' +
+    n.toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'});
+}, 1000);
+
+/* ── TABS ── */
+function switchTab(tab, btn) {
+  document.querySelectorAll('.ltabs>.ltab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-client').classList.toggle('active', tab==='client');
+  document.getElementById('tab-staff').classList.toggle('active', tab==='staff');
+}
+function switchSubTab(tab, btn) {
+  btn.closest('.ltabs').querySelectorAll('.ltab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sub-login').classList.toggle('active', tab==='login');
+  document.getElementById('sub-register').classList.toggle('active', tab==='register');
+}
+
+/* ════════════ AUTH ════════════ */
+function selStaff(el) {
+  document.querySelectorAll('.ucard').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel'); SEL_STAFF = el.dataset.uid;
+  document.getElementById('staff-pw').focus();
+}
+
+async function loginStaff() {
+  if (!SEL_STAFF) { setErr('staffErr','Selecciona tu perfil.'); return; }
+  if (Date.now() < ATTEMPTS.blockedUntil) {
+    setErr('staffErr', `🔒 Bloqueado ${Math.ceil((ATTEMPTS.blockedUntil-Date.now())/1000)}s`); return;
+  }
+  const btn = document.getElementById('staffLoginBtn');
+  btn.disabled = true; btn.textContent = 'Verificando...';
+  const pw = document.getElementById('staff-pw').value;
+
+  // Check against Supabase staff table
+  const staffLocal = STAFF_MAP[SEL_STAFF];
+  if (!staffLocal) { setErr('staffErr','Usuario no encontrado.'); btn.disabled=false; btn.textContent='Ingresar al panel →'; return; }
+
+  if (pw === staffLocal.pw) {
+    ATTEMPTS.count = 0;
+    CU = {...staffLocal, key: SEL_STAFF, type: 'staff'};
+    await loadAllData();
+    goToDash();
+  } else {
+    ATTEMPTS.count++;
+    if (ATTEMPTS.count >= 5) { ATTEMPTS.blockedUntil = Date.now() + 60000; setErr('staffErr','🔒 Bloqueado 60s.'); }
+    else setErr('staffErr', `❌ Incorrecta. ${5-ATTEMPTS.count} intentos restantes.`);
+    shakeInput('staff-pw');
+  }
+  btn.disabled = false; btn.textContent = 'Ingresar al panel →';
+}
+
+async function loginClient() {
+  const em = document.getElementById('cl-email').value.trim().toLowerCase();
+  const pw = document.getElementById('cl-pw').value;
+  if (!em||!pw) { setErr('clientErr','Completa todos los campos.'); return; }
+  const btn = document.getElementById('clientLoginBtn');
+  btn.disabled = true; btn.textContent = 'Verificando...';
+
+  const {data, error} = await DB.from('clients').select('*').eq('email', em).eq('pw', pw).single();
+  if (error || !data) {
+    setErr('clientErr','Correo o contraseña incorrectos.');
+    shakeInput('cl-pw');
+  } else {
+    CU = {...data, type: 'client'};
+    await loadAllData();
+    goToDash();
+  }
+  btn.disabled = false; btn.textContent = 'Ingresar →';
+}
+
+async function registerClient() {
+  const name  = document.getElementById('rg-name').value.trim();
+  const phone = document.getElementById('rg-phone').value.trim();
+  const email = document.getElementById('rg-email').value.trim().toLowerCase();
+  const pw    = document.getElementById('rg-pw').value;
+  if (!name||!phone||!email||!pw) { setErr('clientErr','Completa todos los campos.'); return; }
+  if (pw.length < 6) { setErr('clientErr','Contraseña mínimo 6 caracteres.'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setErr('clientErr','Correo inválido.'); return; }
+
+  const btn = document.getElementById('clientRegBtn');
+  btn.disabled = true; btn.textContent = 'Creando cuenta...';
+
+  const id = 'CL-' + Date.now();
+  const {data, error} = await DB.from('clients').insert({id, name, phone, email, pw, role:'client'}).select().single();
+  if (error) {
+    setErr('clientErr', error.message.includes('unique') ? 'Este correo ya está registrado.' : 'Error: ' + error.message);
+  } else {
+    CU = {...data, type:'client'};
+    await loadAllData();
+    toast2('✓ Cuenta creada', `¡Bienvenido/a ${name}!`);
+    goToDash();
+  }
+  btn.disabled = false; btn.textContent = 'Crear cuenta →';
+}
+
+/* ── LOAD DATA FROM SUPABASE ── */
+async function loadAllData() {
+  const [{data: bk}, {data: cl}] = await Promise.all([
+    DB.from('bookings').select('*').order('created_at', {ascending: false}),
+    DB.from('clients').select('*')
+  ]);
+  BOOKINGS = bk || [];
+  CLIENTS  = cl || [];
+}
+
+/* ── GO DASH ── */
+function goToDash() {
+  document.getElementById('scrLogin').style.opacity = '0';
+  document.getElementById('scrLogin').style.transition = 'opacity .35s ease';
+  setTimeout(() => {
+    showScreen('dash');
+    document.getElementById('scrLogin').style.opacity = '';
+    buildDash();
+  }, 350);
+}
+
+async function doLogout() {
+  CU = null; BOOK_STATE = {srv:null,barber:null,date:null,time:null,pay:'transfer'}; SEL_STAFF = null;
+  document.getElementById('scrDash').style.opacity = '0';
+  document.getElementById('scrDash').style.transition = 'opacity .3s ease';
+  setTimeout(() => {
+    showScreen('login');
+    document.getElementById('scrDash').style.opacity = '';
+    document.getElementById('staff-pw').value = '';
+    document.getElementById('cl-email').value = '';
+    document.getElementById('cl-pw').value = '';
+    document.querySelectorAll('.ucard').forEach(c => c.classList.remove('sel'));
+    SEL_STAFF = null;
+  }, 300);
+}
+
+/* ════════════ DASHBOARD ════════════ */
+function buildDash() {
+  const u = CU;
+  document.getElementById('sbMe').innerHTML = `
+    <div class="sb-av" style="background:linear-gradient(135deg,${u.bg||'#1a1a1a'},${(u.bg||'#1a1a1a')}88);">${u.avatar||'👤'}</div>
+    <div><div class="sb-nm">${u.name}</div>
+    <div class="sb-rl" style="color:${u.color||'#ff6500'};font-size:.6rem;">${u.role==='admin'?'👑 Jefa · Admin':u.role==='barber'?'✂ Barber':'👤 Cliente'}</div></div>`;
+
+  const chipMap = {admin:'tc-admin', barber:'tc-barber', client:'tc-client'};
+  const chipLbl = {admin:'👑 Administradora', barber:'✂ Barber', client:'👤 Cliente'};
+  document.getElementById('tbChip').innerHTML = `<span class="tb-chip ${chipMap[u.role]}">${chipLbl[u.role]}</span>`;
+  document.getElementById('tbNewBtn').style.display = u.role==='admin' ? 'block' : 'none';
+  buildNav();
+  showPage('home');
+}
+
+function buildNav() {
+  const u = CU, nav = document.getElementById('sbNav');
+  let html = '';
+  if (u.type === 'client') {
+    html += `<div class="sb-sec">Mi cuenta</div>
+      <div class="sbi active" onclick="showPage('home',this)"><span class="ic">🏠</span> Inicio</div>
+      <div class="sbi" onclick="showPage('book',this)"><span class="ic">📅</span> Agendar hora <span class="nb">+</span></div>
+      <div class="sbi" onclick="showPage('my-bookings',this)"><span class="ic">📋</span> Mis reservas <span class="nb">${myBookings().length}</span></div>`;
+  } else if (u.role === 'barber') {
+    html += `<div class="sb-sec">Mi panel</div>
+      <div class="sbi active" onclick="showPage('home',this)"><span class="ic">🏠</span> Inicio</div>
+      <div class="sbi" onclick="showPage('my-schedule',this)"><span class="ic">📅</span> Mi agenda <span class="nb">${myBarberBookings().length}</span></div>
+      <div class="sbi" onclick="showPage('my-stats',this)"><span class="ic">📊</span> Mis estadísticas</div>`;
+  } else {
+    html += `<div class="sb-sec">Principal</div>
+      <div class="sbi active" onclick="showPage('home',this)"><span class="ic">🏠</span> Resumen</div>
+      <div class="sbi" onclick="showPage('all-bookings',this)"><span class="ic">📋</span> Reservas <span class="nb">${BOOKINGS.length}</span></div>
+      <div class="sbi" onclick="showPage('calendar',this)"><span class="ic">📅</span> Calendario</div>
+      <div class="sb-sec">Finanzas</div>
+      <div class="sbi" onclick="showPage('finance',this)"><span class="ic">💰</span> Finanzas</div>
+      <div class="sbi" onclick="showPage('payments',this)"><span class="ic">💳</span> Pagos & Banco</div>
+      <div class="sb-sec">Gestión</div>
+      <div class="sbi" onclick="showPage('staff-panel',this)"><span class="ic">👥</span> Staff</div>
+      <div class="sbi" onclick="showPage('clients-panel',this)"><span class="ic">👤</span> Clientes</div>
+      <div class="sbi" onclick="showPage('config',this)"><span class="ic">⚙️</span> Configuración</div>`;
+  }
+  nav.innerHTML = html;
+}
+
+function myBookings()      { return BOOKINGS.filter(b => b.client_id===CU.id||b.client_email===CU.email); }
+function myBarberBookings(){ return BOOKINGS.filter(b => b.barber===CU.name); }
+
+async function showPage(id, el) {
+  document.querySelectorAll('.sbi').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const titles = {home:'INICIO',book:'AGENDAR HORA','my-bookings':'MIS RESERVAS',
+    'my-schedule':'MI AGENDA','my-stats':'MIS ESTADÍSTICAS','all-bookings':'TODAS LAS RESERVAS',
+    calendar:'CALENDARIO',finance:'FINANZAS',payments:'PAGOS & BANCO',
+    'staff-panel':'STAFF','clients-panel':'CLIENTES',config:'CONFIGURACIÓN'};
+  document.getElementById('tbTitle').textContent = titles[id]||id.toUpperCase();
+  // Reload data before rendering
+  await loadAllData();
+  buildNav();
+  const c = document.getElementById('content');
+  c.innerHTML = '<div class="page active" id="pg-'+id+'">'+buildPage(id)+'</div>';
+  if (id==='book') initBookFlow();
+}
+
+function buildPage(id) {
+  const u = CU;
+  if (id==='home') return u.type==='client'?buildClientHome():u.role==='barber'?buildBarberHome():buildAdminHome();
+  if (id==='book')           return buildBookPage();
+  if (id==='my-bookings')    return buildMyBookings();
+  if (id==='my-schedule')    return buildMySchedule();
+  if (id==='my-stats')       return buildMyStats();
+  if (id==='all-bookings')   return buildAllBookings();
+  if (id==='calendar')       return buildCalendarPage();
+  if (id==='finance')        return buildFinancePage();
+  if (id==='payments')       return buildPaymentsPage();
+  if (id==='staff-panel')    return buildStaffPanel();
+  if (id==='clients-panel')  return buildClientsPanel();
+  if (id==='config')         return buildConfigPage();
+  return '';
+}
+
+/* ── CLIENT HOME ── */
+function buildClientHome(){
+  const bks=myBookings(); const next=bks[0];
+  return `<div class="stats-row" style="grid-template-columns:repeat(3,1fr);">
+    <div class="sc" style="--ac:var(--cy)"><div class="sc-ic">📋</div><div class="sc-n">${bks.length}</div><div class="sc-l">Mis reservas</div></div>
+    <div class="sc" style="--ac:var(--gr)"><div class="sc-ic">✅</div><div class="sc-n">${bks.filter(b=>b.status==='confirmado').length}</div><div class="sc-l">Confirmadas</div></div>
+    <div class="sc" style="--ac:var(--or)"><div class="sc-ic">💰</div><div class="sc-n">$${bks.reduce((s,b)=>s+b.price,0).toLocaleString('es-CL')}</div><div class="sc-l">Total gastado</div></div>
+  </div>
+  ${next?`<div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:12px;padding:18px;margin-bottom:18px;">
+    <div style="font-size:.66rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cy);margin-bottom:8px;">📅 PRÓXIMA CITA</div>
+    <div style="font-size:1.05rem;font-weight:700;">${next.srv}</div>
+    <div style="font-size:.8rem;color:var(--gy);margin-top:3px;">${next.barber} · ${next.date} a las ${next.time} hrs</div>
+    <div style="margin-top:8px;">${next.pay==='transfer'?'<span class="chip cy2">🏦 Transferencia</span>':'<span class="chip cg">💵 En local</span>'}</div>
+  </div>`:''}
+  <div style="background:rgba(255,101,0,.06);border:1px solid rgba(255,101,0,.2);border-radius:12px;padding:22px;text-align:center;">
+    <div style="font-size:2.2rem;margin-bottom:10px;">✂️</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:.04em;margin-bottom:7px;">¿LISTO PARA TU PRÓXIMO CORTE?</div>
+    <div style="font-size:.82rem;color:var(--gy);margin-bottom:16px;">Agenda tu hora en segundos con tu barbero favorito.</div>
+    <button class="bsm pri" style="padding:13px 32px;" onclick="showPage('book',document.querySelector('.sbi:nth-child(2)'))">Agendar hora →</button>
+  </div>`;
+}
+
+/* ── BARBER HOME ── */
+function buildBarberHome(){
+  const bks=myBarberBookings();
+  const today=new Date().toLocaleDateString('es-CL',{day:'numeric',month:'short'});
+  const todayBks=bks.filter(b=>b.date&&b.date.includes(today.split(' ')[0]));
+  return `<div class="stats-row" style="grid-template-columns:repeat(3,1fr);">
+    <div class="sc" style="--ac:var(--or)"><div class="sc-ic">📋</div><div class="sc-n">${bks.length}</div><div class="sc-l">Total reservas</div></div>
+    <div class="sc" style="--ac:var(--cy)"><div class="sc-ic">📅</div><div class="sc-n">${todayBks.length}</div><div class="sc-l">Reservas hoy</div></div>
+    <div class="sc" style="--ac:var(--gr)"><div class="sc-ic">⏱</div><div class="sc-n">${TIMES.length-todayBks.length}</div><div class="sc-l">Slots libres hoy</div></div>
+  </div>
+  <div class="sec-hd"><h3>MIS PRÓXIMAS CITAS</h3></div>
+  <div class="tw"><table><thead><tr><th>Cliente</th><th>Servicio</th><th>Hora</th><th>Fecha</th><th>Pago</th></tr></thead>
+  <tbody>${bks.length?bks.slice(0,6).map(b=>`
+    <tr><td><strong>${b.client_name}</strong></td><td>${b.srv}</td>
+    <td style="color:var(--or);font-weight:700;">${b.time} hrs</td>
+    <td style="color:var(--gy);">${b.date}</td>
+    <td>${b.pay==='transfer'?'<span class="chip cy2">🏦</span>':'<span class="chip cg">💵</span>'}</td></tr>`).join('')
+    :'<tr><td colspan="5" style="text-align:center;color:var(--gy);padding:22px;">Aún no tienes reservas asignadas.</td></tr>'}</tbody></table></div>`;
+}
+
+/* ── ADMIN HOME ── */
+function buildAdminHome(){
+  const total=BOOKINGS.reduce((s,b)=>s+b.price,0);
+  const today=new Date().toLocaleDateString('es-CL',{day:'numeric',month:'short'});
+  const todayBks=BOOKINGS.filter(b=>b.date&&b.date.includes(today.split(' ')[0]));
+  return `<div class="stats-row" style="grid-template-columns:repeat(4,1fr);">
+    <div class="sc" style="--ac:var(--or)"><div class="sc-ic">📋</div><div class="sc-n">${BOOKINGS.length}</div><div class="sc-l">Total reservas</div></div>
+    <div class="sc" style="--ac:var(--gr)"><div class="sc-ic">💰</div><div class="sc-n">$${total.toLocaleString('es-CL')}</div><div class="sc-l">Ingresos totales</div></div>
+    <div class="sc" style="--ac:var(--cy)"><div class="sc-ic">📅</div><div class="sc-n">${todayBks.length}</div><div class="sc-l">Reservas hoy</div></div>
+    <div class="sc" style="--ac:var(--pu)"><div class="sc-ic">👤</div><div class="sc-n">${CLIENTS.length}</div><div class="sc-l">Clientes</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+    <div>
+      <div class="sec-hd"><h3>RESERVAS RECIENTES</h3><button class="bsm" onclick="showPage('all-bookings')">Ver todas</button></div>
+      <div class="tw"><table><thead><tr><th>Cliente</th><th>Servicio</th><th>Barbero</th><th>Hora</th><th>Total</th><th>Pago</th></tr></thead>
+      <tbody>${BOOKINGS.length?BOOKINGS.slice(0,5).map(b=>`
+        <tr><td><strong>${b.client_name}</strong></td><td>${b.srv}</td><td>${b.barber.split(' ')[0]}</td>
+        <td style="color:var(--or);">${b.time}</td>
+        <td style="color:var(--or);font-weight:700;">$${b.price.toLocaleString('es-CL')}</td>
+        <td>${b.pay==='transfer'?'<span class="chip cy2">🏦</span>':'<span class="chip cg">💵</span>'}</td></tr>`).join('')
+        :'<tr><td colspan="6" style="text-align:center;color:var(--gy);padding:20px;">Sin reservas aún. <a onclick="openM(\'mNewBook\')" style="color:var(--or);cursor:pointer;">Crear una →</a></td></tr>'}</tbody></table></div>
+    </div>
+    <div>
+      <div class="sec-hd"><h3>HOY</h3></div>
+      <div class="tw" style="padding:16px;">
+        <div style="text-align:center;margin-bottom:12px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:2.3rem;color:var(--or);">$${todayBks.reduce((s,b)=>s+b.price,0).toLocaleString('es-CL')}</div>
+          <div style="font-size:.66rem;color:var(--gy);text-transform:uppercase;">Ingresos del día</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <div style="background:var(--bg4);border:1px solid var(--bd);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--cy);">${BOOKINGS.filter(b=>b.pay==='transfer').length}</div>
+            <div style="font-size:.6rem;color:var(--gy);">Transferencias</div>
+          </div>
+          <div style="background:var(--bg4);border:1px solid var(--bd);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--gr);">${BOOKINGS.filter(b=>b.pay==='local').length}</div>
+            <div style="font-size:.6rem;color:var(--gy);">En local</div>
+          </div>
+        </div>
+        ${['Karen Monsalve','Ignacio Pérez','Franco Jaramillo'].map(n=>{
+          const cnt=BOOKINGS.filter(b=>b.barber===n).length;
+          const pct=BOOKINGS.length?Math.round(cnt/BOOKINGS.length*100):0;
+          return `<div style="margin-bottom:9px;">
+            <div style="display:flex;justify-content:space-between;font-size:.7rem;margin-bottom:3px;">
+              <span>${n.split(' ')[0]}</span><span style="color:var(--or);">${cnt}</span>
+            </div>
+            <div style="height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;">
+              <div style="height:100%;width:${pct}%;background:var(--or);border-radius:2px;"></div>
+            </div></div>`;}).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── BOOK PAGE ── */
+function buildBookPage(){
+  return `<div style="display:grid;grid-template-columns:1fr 370px;gap:18px;align-items:start;">
+    <div>
+      <div class="sec-hd" style="margin-bottom:11px;"><h3>1. ELIGE TU SERVICIO</h3></div>
+      <div class="srv-picker">${SERVICES.map(s=>`<div class="sp" data-sid="${s.id}" data-name="${s.name}" data-price="${s.price}" data-dur="${s.dur}" onclick="pickSrv(this)">
+        <div class="sp-chk">✓</div><div class="sp-icon">${s.icon}</div>
+        <div class="sp-name">${s.name}</div><div class="sp-price">$${s.price.toLocaleString('es-CL')}</div>
+        <div class="sp-dur">⏱ ${s.dur}</div></div>`).join('')}</div>
+      <div class="sec-hd" style="margin-bottom:11px;"><h3>2. ELIGE TU BARBERO</h3></div>
+      <div class="barber-picker">${BARBERS.map(b=>`<div class="bp" data-bid="${b.id}" data-bname="${b.name}" onclick="pickBarber(this)">
+        <div class="bp-sel-badge">✓</div>
+        <div class="bp-av" style="background:linear-gradient(135deg,${b.id==='b1'?'#2a0020,#400030':b.id==='b2'?'#08101a,#101830':'#001008,#001e10'})">${b.icon}</div>
+        <div class="bp-name">${b.name}</div><div class="bp-role">${b.spec}</div>
+        <div class="bp-avail">Disponible</div></div>`).join('')}</div>
+      <div class="sec-hd" style="margin-bottom:9px;"><h3>3. FECHA & HORA</h3></div>
+      <div class="date-chips" id="dateChips"></div>
+      <div class="slots-wrap" id="slotsWrap"></div>
+      <div class="sec-hd" style="margin-bottom:9px;"><h3>4. TUS DATOS</h3></div>
+      <div class="fr2">
+        <div class="lfield"><label class="llbl">Nombre *</label><input type="text" class="linput" id="bk-name" value="${CU.name||''}" placeholder="Tu nombre"/></div>
+        <div class="lfield"><label class="llbl">Teléfono *</label><input type="text" class="linput" id="bk-phone" value="${CU.phone||''}" placeholder="+56 9..."/></div>
+      </div>
+      <div class="lfield"><label class="llbl">Notas</label><input type="text" class="linput" id="bk-notes" placeholder="Ej: fade bajo con línea"/></div>
+    </div>
+    <div style="position:sticky;top:0;">
+      <div class="sec-hd"><h3>RESUMEN</h3></div>
+      <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:18px;">
+        <div id="sumEmpty" style="color:var(--gy);font-size:.8rem;text-align:center;padding:18px 0;">Selecciona servicio y barbero.</div>
+        <div id="sumData" style="display:none;">
+          <div class="bs-row"><span class="bs-key">Servicio</span><span class="bs-val" id="sum-srv">—</span></div>
+          <div class="bs-row"><span class="bs-key">Barbero</span><span class="bs-val" id="sum-bar">—</span></div>
+          <div class="bs-row"><span class="bs-key">Fecha</span><span class="bs-val" id="sum-date">—</span></div>
+          <div class="bs-row"><span class="bs-key">Hora</span><span class="bs-val" id="sum-time">—</span></div>
+          <div class="bs-row"><span class="bs-key">Duración</span><span class="bs-val" id="sum-dur">—</span></div>
+          <div class="total-big"><div class="ta">Total a pagar</div><div class="tn" id="sum-total">$0</div><div style="font-size:.64rem;color:var(--gy);margin-top:2px;">Pesos chilenos (CLP)</div></div>
+          <div style="font-size:.67rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gy);margin-bottom:8px;">Método de pago</div>
+          <div class="pay-opts">
+            <div class="po sel" id="po-transfer" onclick="pickPay('transfer')"><div class="po-ic">🏦</div><div class="po-lbl">Transferencia</div></div>
+            <div class="po" id="po-local" onclick="pickPay('local')"><div class="po-ic">💵</div><div class="po-lbl">En el local</div></div>
+          </div>
+          <div class="transfer-detail" id="tdBox">
+            <h4>🏦 Datos de transferencia</h4>
+            <div class="tr2"><span class="tk2">Banco</span><span>Banco de Chile</span></div>
+            <div class="tr2"><span class="tk2">Titular</span><span>Barber Urban SpA</span></div>
+            <div class="tr2"><span class="tk2">RUT</span><span>12.345.678-9 <button class="cpb" onclick="cp('12.345.678-9')">Copiar</button></span></div>
+            <div class="tr2"><span class="tk2">Cuenta</span><span>00-123-456789-0 <button class="cpb" onclick="cp('00-123-456789-0')">Copiar</button></span></div>
+            <div class="tr2"><span class="tk2">Correo</span><span style="font-size:.68rem;">pagos@barberurban.cl <button class="cpb" onclick="cp('pagos@barberurban.cl')">Copiar</button></span></div>
+            <p style="font-size:.67rem;color:var(--gy);margin-top:8px;line-height:1.6;">Envía comprobante con tu ID de reserva.</p>
+          </div>
+          <div id="localBox" style="display:none;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:9px;padding:12px;font-size:.74rem;color:var(--gr);margin-bottom:11px;line-height:1.6;">
+            ✓ Pagas al llegar. Av. Providencia 1234, Santiago.
+          </div>
+          <button class="bsm pri" style="width:100%;padding:13px;font-size:.86rem;margin-top:3px;" id="confirmBtn" onclick="confirmBooking()">CONFIRMAR RESERVA ✂</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function initBookFlow(){
+  buildDateChips(); buildSlots();
+  BOOK_STATE = {srv:null,barber:null,date:null,time:null,pay:'transfer'};
+  const chips = document.querySelectorAll('.dc:not(.dis)');
+  if (chips[0]) { chips[0].classList.add('sel'); BOOK_STATE.date = chips[0].dataset.label; }
+}
+
+function buildDateChips(){
+  const c = document.getElementById('dateChips'); if(!c) return;
+  c.innerHTML='';
+  const today = new Date();
+  for (let i=0; i<14; i++){
+    const d = new Date(today); d.setDate(today.getDate()+i);
+    const isDis = d.getDay()===0;
+    const chip = document.createElement('div');
+    chip.className = 'dc'+(isDis?' dis':'')+(i===0?' sel':'');
+    chip.innerHTML = `<div class="dn">${DAYS[d.getDay()]}</div><div class="dd">${d.getDate()}</div>`;
+    chip.dataset.label = d.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+    if (!isDis) chip.addEventListener('click',()=>{ document.querySelectorAll('.dc').forEach(c=>c.classList.remove('sel')); chip.classList.add('sel'); BOOK_STATE.date=chip.dataset.label; buildSlots(); updateSummary(); });
+    c.appendChild(chip);
+  }
+  BOOK_STATE.date = document.querySelector('.dc.sel')?.dataset.label||null;
+}
+
+function buildSlots(){
+  const c = document.getElementById('slotsWrap'); if(!c) return; c.innerHTML='';
+  TIMES.forEach(t=>{
+    const taken = BOOKINGS.some(b=>b.time===t&&b.date===BOOK_STATE.date&&b.barber===BOOK_STATE.barber?.name);
+    const el = document.createElement('div');
+    el.className = 'sl'+(taken?' tk':'');
+    el.textContent = t;
+    if (!taken) el.addEventListener('click',()=>{ document.querySelectorAll('.sl:not(.tk)').forEach(s=>s.classList.remove('sel')); el.classList.add('sel'); BOOK_STATE.time=t; updateSummary(); });
+    c.appendChild(el);
+  });
+}
+
+function pickSrv(el){ document.querySelectorAll('.sp').forEach(s=>s.classList.remove('sel')); el.classList.add('sel'); BOOK_STATE.srv={id:el.dataset.sid,name:el.dataset.name,price:+el.dataset.price,dur:el.dataset.dur}; updateSummary(); }
+function pickBarber(el){ document.querySelectorAll('.bp').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); BOOK_STATE.barber={id:el.dataset.bid,name:el.dataset.bname}; buildSlots(); updateSummary(); }
+function pickPay(m){ BOOK_STATE.pay=m; document.querySelectorAll('.po').forEach(p=>p.classList.remove('sel')); document.getElementById('po-'+m)?.classList.add('sel'); document.getElementById('tdBox').style.display=m==='transfer'?'block':'none'; document.getElementById('localBox').style.display=m==='local'?'block':'none'; }
+function updateSummary(){
+  const hasMin=BOOK_STATE.srv||BOOK_STATE.barber;
+  const empty=document.getElementById('sumEmpty'); const data=document.getElementById('sumData');
+  if (!empty||!data) return;
+  empty.style.display=hasMin?'none':'block'; data.style.display=hasMin?'block':'none';
+  if (BOOK_STATE.srv){ document.getElementById('sum-srv').textContent=BOOK_STATE.srv.name; document.getElementById('sum-total').textContent='$'+BOOK_STATE.srv.price.toLocaleString('es-CL'); document.getElementById('sum-dur').textContent=BOOK_STATE.srv.dur; }
+  if (BOOK_STATE.barber) document.getElementById('sum-bar').textContent=BOOK_STATE.barber.name;
+  if (BOOK_STATE.date) document.getElementById('sum-date').textContent=BOOK_STATE.date;
+  if (BOOK_STATE.time) document.getElementById('sum-time').textContent=BOOK_STATE.time+' hrs';
+}
+
+/* ── CONFIRM BOOKING → SUPABASE ── */
+async function confirmBooking(){
+  const name  = document.getElementById('bk-name')?.value.trim();
+  const phone = document.getElementById('bk-phone')?.value.trim();
+  const notes = document.getElementById('bk-notes')?.value.trim();
+  if (!name||!phone) { toast2('⚠ Datos','Ingresa nombre y teléfono.'); return; }
+  if (!BOOK_STATE.srv)    { toast2('⚠ Servicio','Selecciona un servicio.'); return; }
+  if (!BOOK_STATE.barber) { toast2('⚠ Barbero','Selecciona un barbero.'); return; }
+  if (!BOOK_STATE.date)   { toast2('⚠ Fecha','Selecciona una fecha.'); return; }
+  if (!BOOK_STATE.time)   { toast2('⚠ Hora','Selecciona una hora.'); return; }
+
+  const btn = document.getElementById('confirmBtn');
+  btn.disabled = true; btn.textContent = 'Guardando en Supabase...';
+
+  const id = 'BU-' + Date.now();
+  const row = {
+    id,
+    client_id:    CU.type==='client' ? CU.id : null,
+    client_email: CU.email||'',
+    client_name:  name,
+    phone,
+    srv:          BOOK_STATE.srv.name,
+    price:        BOOK_STATE.srv.price,
+    dur:          BOOK_STATE.srv.dur,
+    barber:       BOOK_STATE.barber.name,
+    date:         BOOK_STATE.date,
+    time:         BOOK_STATE.time,
+    pay:          BOOK_STATE.pay,
+    status:       'confirmado',
+    notes:        notes||''
+  };
+
+  const {error} = await DB.from('bookings').insert(row);
+  if (error) {
+    toast2('❌ Error', error.message, true);
+    btn.disabled=false; btn.textContent='CONFIRMAR RESERVA ✂'; return;
+  }
+
+  BOOKINGS.unshift(row);
+  buildNav();
+  document.getElementById('mConfirmDetails').innerHTML=[
+    ['ID',`<strong style="color:var(--or)">${id}</strong>`],
+    ['Cliente',name],['Teléfono',phone],
+    ['Servicio',BOOK_STATE.srv.name],['Barbero',BOOK_STATE.barber.name],
+    ['Fecha',BOOK_STATE.date],['Hora',BOOK_STATE.time+' hrs'],
+    ['Total',`<strong style="color:var(--or)">$${BOOK_STATE.srv.price.toLocaleString('es-CL')} CLP</strong>`],
+    ['Pago',BOOK_STATE.pay==='transfer'?'🏦 Transferencia':'💵 En el local'],
+  ].map(([k,v])=>`<div class="mdr"><span class="mk">${k}</span><span class="mv">${v}</span></div>`).join('');
+  document.getElementById('mConfirmPay').innerHTML=BOOK_STATE.pay==='transfer'
+    ?`<strong>Transfiere $${BOOK_STATE.srv.price.toLocaleString('es-CL')} CLP</strong> a Banco de Chile cta 00-123-456789-0. Referencia: <strong>${id}</strong>`
+    :`<strong>Pagas al llegar.</strong> ${BOOK_STATE.date} · ${BOOK_STATE.time} hrs. Av. Providencia 1234.`;
+  openM('mConfirm');
+  btn.disabled=false; btn.textContent='CONFIRMAR RESERVA ✂';
+}
+
+/* ── TABLES ── */
+function buildMyBookings(){ const bks=myBookings();
+  if(!bks.length) return `<div style="text-align:center;padding:60px 20px;color:var(--gy);"><div style="font-size:3rem;margin-bottom:14px;">📭</div><div style="margin-bottom:16px;">Aún no tienes reservas</div><button class="bsm pri" style="padding:11px 26px;" onclick="showPage('book')">Agendar hora →</button></div>`;
+  return `<div class="tw"><table><thead><tr><th>Servicio</th><th>Barbero</th><th>Fecha</th><th>Hora</th><th>Total</th><th>Pago</th></tr></thead>
+  <tbody>${bks.map(b=>`<tr><td><strong>${b.srv}</strong></td><td>${b.barber}</td><td style="color:var(--gy);">${b.date}</td><td style="color:var(--or);font-weight:700;">${b.time} hrs</td><td style="color:var(--or);font-weight:700;">$${b.price.toLocaleString('es-CL')}</td><td>${b.pay==='transfer'?'<span class="chip cy2">🏦</span>':'<span class="chip cg">💵</span>'}</td></tr>`).join('')}</tbody></table></div>`; }
+
+function buildMySchedule(){ const bks=myBarberBookings();
+  return `<div class="tw"><div class="tf"><input class="fi2" id="schSearch" placeholder="🔍 Buscar..." oninput="filterSchedule()" style="min-width:170px;"/></div>
+  <table><thead><tr><th>Cliente</th><th>Servicio</th><th>Fecha</th><th>Hora</th><th>Duración</th><th>Pago</th></tr></thead>
+  <tbody id="scheduleTable">${renderSchRows(bks)}</tbody></table></div>`; }
+function renderSchRows(bks){ if(!bks.length) return '<tr><td colspan="6" style="text-align:center;color:var(--gy);padding:26px;">Sin reservas asignadas.</td></tr>';
+  return bks.map(b=>`<tr><td><strong>${b.client_name}</strong><br><span style="font-size:.68rem;color:var(--gy);">${b.phone}</span></td><td>${b.srv}</td><td style="color:var(--gy);">${b.date}</td><td style="color:var(--or);font-weight:700;">${b.time} hrs</td><td style="color:var(--gy);">${b.dur}</td><td>${b.pay==='transfer'?'<span class="chip cy2">🏦</span>':'<span class="chip cg">💵</span>'}</td></tr>`).join(''); }
+function filterSchedule(){ const q=document.getElementById('schSearch')?.value.toLowerCase()||''; const tb=document.getElementById('scheduleTable'); if(tb) tb.innerHTML=renderSchRows(myBarberBookings().filter(b=>b.client_name.toLowerCase().includes(q)||b.srv.toLowerCase().includes(q))); }
+
+function buildMyStats(){ const bks=myBarberBookings(); const sc={};bks.forEach(b=>{sc[b.srv]=(sc[b.srv]||0)+1;});
+  return `<div class="stats-row" style="grid-template-columns:repeat(3,1fr);">
+    <div class="sc" style="--ac:var(--or)"><div class="sc-ic">📋</div><div class="sc-n">${bks.length}</div><div class="sc-l">Mis reservas</div></div>
+    <div class="sc" style="--ac:var(--cy)"><div class="sc-ic">🏆</div><div class="sc-n">${Object.entries(sc).sort((a,b)=>b[1]-a[1])[0]?.[0]?.split(' ')[0]||'—'}</div><div class="sc-l">Servicio top</div></div>
+    <div class="sc" style="--ac:var(--pu)"><div class="sc-ic">📅</div><div class="sc-n">${[...new Set(bks.map(b=>b.date))].length}</div><div class="sc-l">Días trabajados</div></div>
+  </div>
+  <div class="tw" style="padding:17px;">${Object.entries(sc).length?Object.entries(sc).sort((a,b)=>b[1]-a[1]).map(([srv,cnt])=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bd);">
+      <span style="font-size:.82rem;">${srv}</span>
+      <div style="display:flex;align-items:center;gap:11px;">
+        <div style="width:90px;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;"><div style="height:100%;width:${Math.round(cnt/bks.length*100)}%;background:var(--or);border-radius:2px;"></div></div>
+        <span style="font-size:.8rem;color:var(--or);font-weight:700;width:18px;text-align:right;">${cnt}</span>
+      </div></div>`).join(''):'<p style="color:var(--gy);text-align:center;padding:18px;">Sin datos.</p>'}</div>`; }
+
+function buildAllBookings(){ return `
+  <div class="sec-hd"><h3>TODAS LAS RESERVAS</h3><div style="display:flex;gap:7px;"><button class="bsm" onclick="exportCSV()">⬇ CSV</button><button class="bsm pri" onclick="openM('mNewBook')">+ Nueva</button></div></div>
+  <div class="tw"><div class="tf">
+    <input class="fi2" id="bkSearch" placeholder="🔍 Buscar..." oninput="filterAll()" style="min-width:150px;"/>
+    <select class="fi2" id="bkBarberF" onchange="filterAll()"><option value="">Todos los barberos</option><option>Karen Monsalve</option><option>Ignacio Pérez</option><option>Franco Jaramillo</option></select>
+    <select class="fi2" id="bkPayF" onchange="filterAll()"><option value="">Todos los pagos</option><option value="transfer">Transferencia</option><option value="local">En local</option></select>
+  </div>
+  <table><thead><tr><th>#</th><th>Cliente</th><th>Servicio</th><th>Barbero</th><th>Fecha/Hora</th><th>Total</th><th>Pago</th><th>✕</th></tr></thead>
+  <tbody id="allBkTb">${renderAllRows(BOOKINGS)}</tbody></table></div>`; }
+function renderAllRows(bks){ if(!bks.length) return '<tr><td colspan="8" style="text-align:center;color:var(--gy);padding:24px;">Sin reservas.</td></tr>';
+  return bks.map(b=>`<tr><td style="font-size:.66rem;color:var(--gy);">${b.id}</td>
+    <td><strong>${b.client_name}</strong><br><span style="font-size:.68rem;color:var(--gy);">${b.phone}</span></td>
+    <td>${b.srv}</td><td>${b.barber}</td><td style="color:var(--gy);">${b.date} · ${b.time}</td>
+    <td style="color:var(--or);font-weight:700;">$${b.price.toLocaleString('es-CL')}</td>
+    <td>${b.pay==='transfer'?'<span class="chip cy2">🏦</span>':'<span class="chip cg">💵</span>'}</td>
+    <td><button class="bsm dan" onclick="delBooking('${b.id}')">✕</button></td></tr>`).join(''); }
+function filterAll(){ const q=document.getElementById('bkSearch')?.value.toLowerCase()||''; const bf=document.getElementById('bkBarberF')?.value||''; const pf=document.getElementById('bkPayF')?.value||'';
+  const filtered=BOOKINGS.filter(b=>{ if(q&&!b.client_name.toLowerCase().includes(q)&&!b.srv.toLowerCase().includes(q)) return false; if(bf&&b.barber!==bf) return false; if(pf&&b.pay!==pf) return false; return true; });
+  const tb=document.getElementById('allBkTb'); if(tb) tb.innerHTML=renderAllRows(filtered); }
+
+async function delBooking(id){ const {error}=await DB.from('bookings').delete().eq('id',id);
+  if(error){ toast2('❌ Error',error.message,true); return; }
+  BOOKINGS=BOOKINGS.filter(b=>b.id!==id); buildNav(); filterAll(); toast2('🗑 Eliminada','Reserva eliminada de Supabase.'); }
+
+async function saveManualBooking(){ const name=document.getElementById('mn-name')?.value.trim(); const phone=document.getElementById('mn-phone')?.value.trim(); const srvV=document.getElementById('mn-srv')?.value; const barber=document.getElementById('mn-barber')?.value; const time=document.getElementById('mn-time')?.value; const pay=document.getElementById('mn-pay')?.value;
+  if(!name||!phone||!srvV||!barber){ toast2('⚠ Datos','Completa todos los campos.'); return; }
+  const [srv,price,dur]=srvV.split('|'); const id='BU-'+Date.now();
+  const today=new Date().toLocaleDateString('es-CL',{day:'numeric',month:'short'});
+  const btn=document.getElementById('mnSaveBtn'); btn.disabled=true; btn.textContent='Guardando...';
+  const row={id,client_id:null,client_email:'',client_name:name,phone,srv,price:+price,dur,barber,date:today,time,pay,status:'confirmado',notes:''};
+  const {error}=await DB.from('bookings').insert(row);
+  if(error){ toast2('❌ Error',error.message,true); btn.disabled=false; btn.textContent='Guardar en Supabase'; return; }
+  BOOKINGS.unshift(row); buildNav(); closeM('mNewBook'); toast2('✓ Reserva creada',`${name} — ${srv}`);
+  if(document.getElementById('allBkTb')) filterAll();
+  btn.disabled=false; btn.textContent='Guardar en Supabase'; }
+
+function buildCalendarPage(){ const now=new Date(); const y=now.getFullYear(),m=now.getMonth();
+  const mname=now.toLocaleDateString('es-CL',{month:'long',year:'numeric'}).toUpperCase();
+  const dim=new Date(y,m+1,0).getDate(); const fd=new Date(y,m,1).getDay();
+  let ch=''; ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'].forEach(d=>{ch+=`<div style="font-size:.58rem;color:var(--gy);text-align:center;padding:4px;letter-spacing:.08em;">${d}</div>`;});
+  for(let i=0;i<fd;i++) ch+=`<div></div>`;
+  for(let d=1;d<=dim;d++){ const cnt=BOOKINGS.filter(b=>b.date&&b.date.startsWith(d+' ')).length; const isT=d===now.getDate();
+    ch+=`<div onclick="showDay(${d})" style="aspect-ratio:1;border-radius:7px;background:${isT?'var(--or)':'var(--bg4)'};border:1px solid ${cnt?'rgba(34,197,94,.3)':'var(--bd)'};display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.74rem;cursor:pointer;transition:all .15s;position:relative;" onmouseover="this.style.borderColor='var(--or)'" onmouseout="this.style.borderColor='${cnt?'rgba(34,197,94,.3)':'var(--bd)'}'">
+      ${d}${cnt?`<div style="position:absolute;bottom:2px;width:4px;height:4px;border-radius:50%;background:var(--gr);"></div>`:''}
+    </div>`; }
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+    <div><div class="sec-hd"><h3>CALENDARIO — ${mname}</h3></div>
+    <div class="tw" style="padding:16px;"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">${ch}</div></div></div>
+    <div><div class="sec-hd"><h3>CITAS DEL DÍA</h3></div>
+    <div class="tw" style="padding:16px;min-height:180px;" id="dayDetail"><p style="color:var(--gy);font-size:.8rem;">Selecciona un día.</p></div></div>
+  </div>`; }
+function showDay(d){ const bks=BOOKINGS.filter(b=>b.date&&b.date.startsWith(d+' ')); const el=document.getElementById('dayDetail'); if(!el) return;
+  el.innerHTML=bks.length?bks.map(b=>`<div style="padding:10px;background:var(--bg4);border:1px solid var(--bd);border-radius:8px;margin-bottom:8px;"><strong>${b.client_name}</strong> — ${b.srv}<br><span style="font-size:.7rem;color:var(--gy);">${b.barber} · ${b.time} · $${b.price.toLocaleString('es-CL')} · ${b.pay==='transfer'?'🏦':'💵'}</span></div>`).join(''):`<p style="color:var(--gy);font-size:.8rem;">Sin reservas.</p>`; }
+
+function buildFinancePage(){ const total=BOOKINGS.reduce((s,b)=>s+b.price,0);
+  const tT=BOOKINGS.filter(b=>b.pay==='transfer').reduce((s,b)=>s+b.price,0);
+  const lT=BOOKINGS.filter(b=>b.pay==='local').reduce((s,b)=>s+b.price,0);
+  const bRevs=BARBERS.map(b=>({name:b.name,icon:b.icon,total:BOOKINGS.filter(bk=>bk.barber===b.name).reduce((s,bk)=>s+bk.price,0),count:BOOKINGS.filter(bk=>bk.barber===b.name).length}));
+  return `<div class="stats-row" style="grid-template-columns:repeat(4,1fr);">
+    <div class="sc" style="--ac:var(--or)"><div class="sc-ic">💰</div><div class="sc-n">$${total.toLocaleString('es-CL')}</div><div class="sc-l">Ingresos totales</div></div>
+    <div class="sc" style="--ac:var(--cy)"><div class="sc-ic">🏦</div><div class="sc-n">$${tT.toLocaleString('es-CL')}</div><div class="sc-l">Por transferencia</div></div>
+    <div class="sc" style="--ac:var(--gr)"><div class="sc-ic">💵</div><div class="sc-n">$${lT.toLocaleString('es-CL')}</div><div class="sc-l">En local</div></div>
+    <div class="sc" style="--ac:var(--pu)"><div class="sc-ic">📊</div><div class="sc-n">${BOOKINGS.length}</div><div class="sc-l">Servicios</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div><div class="sec-hd"><h3>POR BARBERO</h3></div><div class="tw" style="padding:16px;">
+      ${bRevs.map(b=>`<div style="padding:13px 0;border-bottom:1px solid var(--bd);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;"><span style="font-weight:700;">${b.icon} ${b.name}</span><span style="color:var(--or);font-weight:700;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;">$${b.total.toLocaleString('es-CL')}</span></div>
+        <div style="height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;"><div style="height:100%;width:${total?Math.round(b.total/total*100):0}%;background:var(--or);border-radius:2px;"></div></div>
+        <div style="font-size:.66rem;color:var(--gy);margin-top:3px;">${b.count} servicios · ${total?Math.round(b.total/total*100):0}%</div>
+      </div>`).join('')}</div></div>
+    <div><div class="sec-hd"><h3>POR SERVICIO</h3></div><div class="tw" style="padding:16px;">
+      ${(()=>{ const sr={};BOOKINGS.forEach(b=>{sr[b.srv]=(sr[b.srv]||0)+b.price;}); return Object.keys(sr).length?Object.entries(sr).sort((a,b)=>b[1]-a[1]).map(([s,r])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd);font-size:.8rem;"><span>${s}</span><span style="color:var(--or);font-weight:700;">$${r.toLocaleString('es-CL')}</span></div>`).join(''):'<p style="color:var(--gy);text-align:center;padding:18px;">Sin datos.</p>'; })()}
+    </div></div>
+  </div>`; }
+
+function buildPaymentsPage(){ const total=BOOKINGS.reduce((s,b)=>s+b.price,0);
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="tw" style="padding:20px;">
+      <div style="font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--or);margin-bottom:13px;">🏦 DATOS BANCARIOS</div>
+      <div class="tr2"><span class="tk2">Banco</span><span>Banco de Chile</span></div>
+      <div class="tr2"><span class="tk2">Titular</span><span>Barber Urban SpA</span></div>
+      <div class="tr2"><span class="tk2">RUT</span><span>12.345.678-9 <button class="cpb" onclick="cp('12.345.678-9')">Copiar</button></span></div>
+      <div class="tr2"><span class="tk2">Cuenta Cte.</span><span>00-123-456789-0 <button class="cpb" onclick="cp('00-123-456789-0')">Copiar</button></span></div>
+      <div class="tr2"><span class="tk2">Correo</span><span style="font-size:.72rem;">pagos@barberurban.cl <button class="cpb" onclick="cp('pagos@barberurban.cl')">Copiar</button></span></div>
+      <p style="font-size:.68rem;color:var(--gy);margin-top:11px;line-height:1.7;">Clientes con transferencia deben enviar comprobante con ID de reserva.</p>
+    </div>
+    <div class="tw" style="padding:20px;">
+      <div style="font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--or);margin-bottom:13px;">📋 HISTORIAL</div>
+      <div style="max-height:340px;overflow-y:auto;">
+        ${BOOKINGS.length?BOOKINGS.map(b=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bd);">
+          <div><strong style="font-size:.8rem;">${b.client_name}</strong><br><span style="font-size:.68rem;color:var(--gy);">${b.srv} · ${b.time} · ${b.date}</span></div>
+          <div style="text-align:right;"><span style="color:var(--or);font-weight:700;">$${b.price.toLocaleString('es-CL')}</span><br>${b.pay==='transfer'?'<span class="chip cy2" style="font-size:.56rem;">🏦</span>':'<span class="chip cg" style="font-size:.56rem;">💵</span>'}</div>
+        </div>`).join(''):'<p style="color:var(--gy);text-align:center;padding:18px;">Sin pagos.</p>'}
+      </div>
+    </div>
+  </div>`; }
+
+function buildStaffPanel(){ return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+  ${BARBERS.map((b,i)=>{ const bks=BOOKINGS.filter(bk=>bk.barber===b.name); const rev=bks.reduce((s,bk)=>s+bk.price,0); const cl=i===0?'#2a0020,#400030':i===1?'#08101a,#101830':'#001008,#001e10';
+    return `<div style="background:var(--bg3);border:1px solid ${i===0?'rgba(255,214,0,.3)':'var(--bd)'};border-radius:13px;padding:22px;text-align:center;${i===0?'border-top:3px solid var(--ye);':''}">
+      <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,${cl});margin:0 auto 11px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;">${b.icon}</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.04em;margin-bottom:4px;">${b.name}</div>
+      ${i===0?'<span class="chip cy3">👑 Jefa · Senior Barber</span>':'<span class="chip co">Barber</span>'}
+      <div style="display:flex;justify-content:center;gap:18px;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd);">
+        <div style="text-align:center;"><div style="font-family:'Bebas Neue',sans-serif;font-size:1.7rem;color:var(--or);">${bks.length}</div><div style="font-size:.6rem;color:var(--gy);text-transform:uppercase;">Reservas</div></div>
+        <div style="text-align:center;"><div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--gr);">$${Math.round(rev/1000)}k</div><div style="font-size:.6rem;color:var(--gy);text-transform:uppercase;">Ingresos</div></div>
+      </div></div>`; }).join('')}</div>`; }
+
+function buildClientsPanel(){ return `<div class="sec-hd"><h3>CLIENTES</h3><span style="font-size:.78rem;color:var(--gy);">${CLIENTS.length} registrados</span></div>
+  <div class="tw"><table><thead><tr><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Reservas</th><th>Total gastado</th></tr></thead>
+  <tbody>${CLIENTS.length?CLIENTS.map(c=>{ const bks=BOOKINGS.filter(b=>b.client_email===c.email||b.client_id===c.id);
+    return `<tr><td><strong>${c.name}</strong></td><td style="color:var(--gy);font-size:.76rem;">${c.email}</td><td style="color:var(--gy);">${c.phone}</td><td>${bks.length}</td><td style="color:var(--or);font-weight:700;">$${bks.reduce((s,b)=>s+b.price,0).toLocaleString('es-CL')}</td></tr>`; }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--gy);padding:24px;">Sin clientes.</td></tr>'}
+  </tbody></table></div>`; }
+
+function buildConfigPage(){ return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+  <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:22px;">
+    <h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.05rem;color:var(--or);margin-bottom:16px;">🏪 Datos del negocio</h3>
+    <div class="lfield"><label class="llbl">Nombre</label><input type="text" class="linput" value="Barber Urban"/></div>
+    <div class="lfield"><label class="llbl">Dirección</label><input type="text" class="linput" value="Av. Providencia 1234, Santiago"/></div>
+    <div class="lfield"><label class="llbl">Teléfono</label><input type="text" class="linput" value="+56 9 8765 4321"/></div>
+    <div class="lfield"><label class="llbl">Instagram</label><input type="text" class="linput" value="@barberurban"/></div>
+    <div class="lfield"><label class="llbl">URL pública</label><input type="text" class="linput" value="https://barberurban.netlify.app"/></div>
+    <button class="bsm pri" style="width:100%;padding:10px;margin-top:4px;" onclick="toast2('✓ Guardado','Configuración actualizada.')">Guardar cambios</button>
+  </div>
+  <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:22px;">
+    <h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.05rem;color:var(--or);margin-bottom:16px;">🔑 Contraseñas staff</h3>
+    <div class="lfield"><label class="llbl">Usuario</label><select class="linput" id="cfg-usr"><option>Karen Monsalve</option><option>Ignacio Pérez</option><option>Franco Jaramillo</option></select></div>
+    <div class="lfield"><label class="llbl">Nueva contraseña</label><input type="password" class="linput" id="cfg-pw1" placeholder="Mínimo 6 caracteres"/></div>
+    <div class="lfield"><label class="llbl">Confirmar</label><input type="password" class="linput" id="cfg-pw2" placeholder="Repetir contraseña"/></div>
+    <button class="bsm pri" style="width:100%;padding:10px;margin-top:4px;" onclick="changePw()">Actualizar contraseña en Supabase</button>
+  </div>
+</div>`; }
+
+async function changePw(){ const p1=document.getElementById('cfg-pw1')?.value; const p2=document.getElementById('cfg-pw2')?.value;
+  if(!p1||p1!==p2){ toast2('⚠ Error','Contraseñas no coinciden.',true); return; }
+  if(p1.length<6){ toast2('⚠ Débil','Mínimo 6 caracteres.',true); return; }
+  const usr=document.getElementById('cfg-usr')?.value;
+  const key=Object.keys(STAFF_MAP).find(k=>STAFF_MAP[k].name===usr);
+  if(!key){ toast2('⚠ Error','Usuario no encontrado.',true); return; }
+  const {error}=await DB.from('staff').update({pw:p1}).eq('id',key);
+  if(error){ toast2('❌ Error',error.message,true); return; }
+  STAFF_MAP[key].pw=p1;
+  document.getElementById('cfg-pw1').value=''; document.getElementById('cfg-pw2').value='';
+  toast2('✓ Actualizada',`Contraseña de ${usr} guardada en Supabase.`); }
+
+function exportCSV(){ if(!BOOKINGS.length){ toast2('⚠ Sin datos','No hay reservas.'); return; }
+  const h='ID,Cliente,Telefono,Servicio,Precio,Barbero,Fecha,Hora,Pago';
+  const rows=BOOKINGS.map(b=>[b.id,b.client_name,b.phone,b.srv,b.price,b.barber,b.date,b.time,b.pay].join(','));
+  const blob=new Blob([h+'\n'+rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`barber-urban-${new Date().toISOString().split('T')[0]}.csv`; a.click();
+  toast2('✓ Exportado','CSV descargado.'); }
+
+/* ── UTILS ── */
+function openM(id){ document.getElementById(id)?.classList.remove('hidden'); }
+function closeM(id){ document.getElementById(id)?.classList.add('hidden'); }
+function setErr(id,msg){ const el=document.getElementById(id); if(el) el.textContent=msg; }
+function shakeInput(id){ const el=document.getElementById(id); if(el){ el.classList.add('err'); setTimeout(()=>el.classList.remove('err'),500); } }
+function cp(t){ navigator.clipboard.writeText(t).then(()=>toast2('✓ Copiado',t)); }
+function toast2(title,msg,isErr=false){
+  document.getElementById('tt').textContent=title; document.getElementById('tm').textContent=msg;
+  const t=document.getElementById('toast');
+  t.className='toast'+(isErr?' err-toast':'');
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),4200); }
+
+['mConfirm','mNewBook'].forEach(id=>{ document.getElementById(id)?.addEventListener('click',function(e){if(e.target===this)closeM(id);}); });
+
+// START
+init();
+</script>
+</body>
+</html>
