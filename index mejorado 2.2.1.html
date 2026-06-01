@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Barber Urban</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#080808;--bg2:#0f0f0f;--bg3:#161616;--bg4:#1e1e1e;
+  --or:#ff6500;--or2:#ff8c30;--or3:#ffb060;
+  --cy:#00d4ff;--ye:#ffd600;--gr:#22c55e;--re:#ef4444;--pu:#a855f7;
+  --wh:#f0f0f0;--gy:#777;--gy2:#333;--bd:#252525;--sh:rgba(255,101,0,.15);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--bg);color:var(--wh);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+@keyframes pop{from{transform:scale(.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 rgba(255,101,0,0);}50%{box-shadow:0 0 20px rgba(255,101,0,.35);}}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@keyframes slideR{from{transform:translateX(-100%);}to{transform:translateX(0);}}
+
+/* SCREENS */
+#scrLoader,#scrLogin,#scrDash{display:none;position:fixed;inset:0;z-index:100;}
+#scrLoader.on{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);}
+#scrLogin.on{display:flex;align-items:flex-start;justify-content:center;background:var(--bg);overflow-y:auto;padding:20px 16px;}
+#scrDash.on{display:flex;position:relative;height:100vh;}
+
+/* LOADER */
+.load-logo{font-family:'Bebas Neue',sans-serif;font-size:2.6rem;letter-spacing:.08em;}
+.load-logo span{color:var(--or);}
+.load-spin{width:32px;height:32px;border:3px solid var(--bd);border-top-color:var(--or);border-radius:50%;animation:spin .8s linear infinite;margin:12px 0 8px;}
+.load-txt{font-size:.72rem;color:var(--gy);letter-spacing:.1em;text-transform:uppercase;}
+
+/* LOGIN BOX */
+.lbox{
+  position:relative;z-index:2;
+  background:var(--bg3);border:1px solid var(--bd);border-radius:18px;
+  padding:32px 28px;width:100%;max-width:400px;
+  box-shadow:0 20px 70px rgba(0,0,0,.6);
+  animation:fadeUp .5s ease;
+  margin:auto 0;
+}
+.login-bg{position:fixed;inset:0;background:radial-gradient(ellipse 55% 55% at 50% 40%,rgba(255,101,0,.07) 0%,transparent 70%);pointer-events:none;z-index:1;}
+.llogo{text-align:center;margin-bottom:20px;}
+.llogo-t{font-family:'Bebas Neue',sans-serif;font-size:2.4rem;letter-spacing:.08em;}
+.llogo-t span{color:var(--or);}
+.llogo p{font-size:.7rem;color:var(--gy);letter-spacing:.12em;text-transform:uppercase;margin-top:3px;}
+
+/* TABS */
+.tabbar{display:flex;background:var(--bg4);border-radius:9px;padding:3px;margin-bottom:16px;gap:3px;}
+.tabbar button{flex:1;padding:8px;border-radius:7px;border:none;background:transparent;color:var(--gy);font-family:'Outfit',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.tabbar button.on{background:var(--or);color:#fff;}
+.tpanel{display:none;}
+.tpanel.on{display:block;animation:fadeIn .25s ease;}
+
+/* FORM */
+.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
+.flbl{font-size:.66rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gy);}
+.finp{background:var(--bg4);border:1px solid var(--bd);color:var(--wh);font-family:'Outfit',sans-serif;font-size:.86rem;padding:11px 13px;outline:none;border-radius:8px;transition:all .2s;width:100%;}
+.finp:focus{border-color:var(--or);box-shadow:0 0 0 3px rgba(255,101,0,.1);}
+.finp::placeholder{color:var(--gy2);}
+.finp.shake{animation:shake .4s ease;}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.lbtn{width:100%;background:linear-gradient(135deg,var(--or),var(--or2));color:#fff;border:none;padding:13px;font-family:'Outfit',sans-serif;font-size:.88rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border-radius:9px;box-shadow:0 4px 18px var(--sh);margin-top:4px;animation:glow 3s infinite;transition:all .2s;}
+.lbtn:hover:not(:disabled){transform:translateY(-1px);}
+.lbtn:disabled{opacity:.5;cursor:not-allowed;animation:none;}
+.lerr{font-size:.7rem;color:var(--re);text-align:center;margin-top:7px;min-height:18px;}
+.lhint{font-size:.67rem;color:var(--gy);text-align:center;margin-top:9px;line-height:1.75;}
+.lhint b{color:var(--or3);}
+
+/* STAFF CARDS */
+.ucards{display:flex;flex-direction:column;gap:7px;margin-bottom:14px;}
+.ucard{background:var(--bg4);border:1px solid var(--bd);border-radius:10px;padding:11px 13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:11px;}
+.ucard:hover{border-color:rgba(255,101,0,.4);}
+.ucard.on{border-color:var(--or);background:rgba(255,101,0,.07);}
+.ucav{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.ucn{font-weight:700;font-size:.84rem;}
+.ucr{font-size:.65rem;margin-top:1px;}
+.ucbadge{font-size:.55rem;font-weight:700;letter-spacing:.1em;padding:2px 6px;border-radius:100px;margin-left:auto;flex-shrink:0;}
+.bj{background:rgba(255,214,0,.1);color:var(--ye);border:1px solid rgba(255,214,0,.25);}
+.bb{background:rgba(255,101,0,.1);color:var(--or3);border:1px solid rgba(255,101,0,.2);}
+
+/* DASHBOARD */
+.sidebar{width:230px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--bd);display:flex;flex-direction:column;height:100vh;z-index:50;transition:transform .3s ease;animation:slideR .35s ease;}
+.sb-logo{padding:16px 15px;border-bottom:1px solid var(--bd);}
+.sb-logo-t{font-family:'Bebas Neue',sans-serif;font-size:1.35rem;letter-spacing:.06em;}
+.sb-logo-t span{color:var(--or);}
+.sb-logo p{font-size:.6rem;color:var(--gy);letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.sb-badge{font-size:.56rem;background:rgba(34,197,94,.1);color:var(--gr);border:1px solid rgba(34,197,94,.2);padding:2px 6px;border-radius:100px;margin-top:5px;display:inline-block;}
+.sb-me{padding:12px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;}
+.sb-av{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;}
+.sb-nm{font-weight:700;font-size:.78rem;}
+.sb-rl{font-size:.6rem;margin-top:1px;}
+.sb-nav{flex:1;padding:9px 7px;overflow-y:auto;}
+.sb-sec{font-size:.56rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gy2);padding:8px 10px 4px;}
+.sbi{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:all .2s;margin-bottom:2px;font-size:.78rem;color:var(--gy);}
+.sbi:hover{background:var(--bg3);color:var(--wh);}
+.sbi.on{background:rgba(255,101,0,.1);color:var(--or);border:1px solid rgba(255,101,0,.15);}
+.sbi .ic{width:16px;text-align:center;font-size:.8rem;}
+.sbi .nb{margin-left:auto;background:var(--or);color:#fff;font-size:.56rem;font-weight:700;padding:2px 5px;border-radius:100px;}
+.sb-bot{padding:11px;border-top:1px solid var(--bd);}
+.sb-out{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:7px;cursor:pointer;font-size:.74rem;color:var(--gy);transition:all .2s;}
+.sb-out:hover{background:rgba(239,68,68,.08);color:var(--re);}
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+.topbar{height:50px;background:var(--bg2);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;gap:8px;}
+.tb-l{display:flex;align-items:center;gap:8px;min-width:0;}
+.tb-title{font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:.04em;white-space:nowrap;}
+.tb-chip{font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:100px;white-space:nowrap;}
+.tc-admin{background:rgba(255,214,0,.1);color:var(--ye);border:1px solid rgba(255,214,0,.2);}
+.tc-barber{background:rgba(255,101,0,.1);color:var(--or3);border:1px solid rgba(255,101,0,.15);}
+.tc-client{background:rgba(0,212,255,.1);color:var(--cy);border:1px solid rgba(0,212,255,.2);}
+.tb-r{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--gr);animation:pulse 2s infinite;flex-shrink:0;}
+.clk{font-size:.7rem;color:var(--gy);white-space:nowrap;}
+.ham{display:none;background:none;border:none;color:var(--wh);font-size:1.3rem;cursor:pointer;padding:4px;line-height:1;flex-shrink:0;}
+.overlay-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:49;}
+.overlay-bg.on{display:block;}
+.content{flex:1;overflow-y:auto;padding:18px;}
+.content::-webkit-scrollbar{width:4px;}
+.content::-webkit-scrollbar-thumb{background:var(--bd);}
+
+/* COMPONENTS */
+.bsm{background:var(--bg4);border:1px solid var(--bd);color:var(--gy);padding:6px 12px;font-family:'Outfit',sans-serif;font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border-radius:6px;transition:all .2s;}
+.bsm:hover:not(:disabled){border-color:var(--or);color:var(--or);}
+.bsm.pri{background:var(--or);border-color:var(--or);color:#fff;}
+.bsm.pri:hover:not(:disabled){background:var(--or2);}
+.bsm.dan{border-color:rgba(239,68,68,.3);color:var(--re);}
+.bsm.dan:hover:not(:disabled){background:rgba(239,68,68,.08);}
+.bsm:disabled{opacity:.4;cursor:not-allowed;}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.sec-hd h3{font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:.04em;}
+.sg4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.sg3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+.sg2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;}
+.sc{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:16px;position:relative;overflow:hidden;transition:transform .2s;}
+.sc:hover{transform:translateY(-2px);}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ac,var(--or));}
+.sc-ic{font-size:1.4rem;margin-bottom:7px;}
+.sc-n{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;line-height:1;color:var(--ac,var(--or));}
+.sc-l{font-size:.65rem;color:var(--gy);text-transform:uppercase;letter-spacing:.1em;margin-top:2px;}
+.tw{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;overflow:hidden;}
+.tf{padding:12px 14px;border-bottom:1px solid var(--bd);display:flex;gap:7px;flex-wrap:wrap;}
+.si{background:var(--bg4);border:1px solid var(--bd);color:var(--wh);font-family:'Outfit',sans-serif;font-size:.76rem;padding:7px 10px;border-radius:6px;outline:none;transition:border-color .2s;}
+.si:focus{border-color:var(--or);}
+.si::placeholder{color:var(--gy2);}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;min-width:480px;}
+thead tr{background:var(--bg4);border-bottom:1px solid var(--bd);}
+th{padding:9px 13px;font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gy);text-align:left;white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--bd);transition:background .15s;}
+tbody tr:hover{background:var(--bg4);}
+tbody tr:last-child{border-bottom:none;}
+td{padding:10px 13px;font-size:.78rem;}
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:.6rem;font-weight:700;letter-spacing:.08em;padding:3px 6px;border-radius:100px;}
+.cg{background:rgba(34,197,94,.1);color:var(--gr);border:1px solid rgba(34,197,94,.2);}
+.co{background:rgba(255,101,0,.1);color:var(--or3);border:1px solid rgba(255,101,0,.2);}
+.cy2{background:rgba(0,212,255,.1);color:var(--cy);border:1px solid rgba(0,212,255,.2);}
+.cy3{background:rgba(255,214,0,.1);color:var(--ye);border:1px solid rgba(255,214,0,.2);}
+
+/* BOOKING UI */
+.srv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+.scard{background:var(--bg3);border:1px solid var(--bd);border-radius:9px;padding:13px 10px;cursor:pointer;transition:all .2s;position:relative;text-align:center;}
+.scard::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--or),var(--ye));transform:scaleX(0);transform-origin:left;transition:transform .3s;}
+.scard:hover{border-color:rgba(255,101,0,.4);transform:translateY(-2px);}
+.scard:hover::after,.scard.on::after{transform:scaleX(1);}
+.scard.on{border-color:var(--or);background:rgba(255,101,0,.07);}
+.scard-chk{position:absolute;top:6px;right:6px;width:17px;height:17px;border-radius:50%;background:var(--or);display:flex;align-items:center;justify-content:center;font-size:.55rem;opacity:0;transition:opacity .2s;}
+.scard.on .scard-chk{opacity:1;}
+.bar-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.bcard{background:var(--bg3);border:1px solid var(--bd);border-radius:9px;padding:14px;cursor:pointer;transition:all .2s;text-align:center;position:relative;}
+.bcard:hover,.bcard.on{border-color:rgba(255,101,0,.4);background:rgba(255,101,0,.05);}
+.bcard.on{border-color:var(--or);}
+.bcard-av{width:46px;height:46px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;}
+.bcard-sel{position:absolute;top:6px;right:6px;background:var(--or);color:#fff;font-size:.55rem;font-weight:700;padding:2px 5px;border-radius:100px;opacity:0;transition:opacity .2s;}
+.bcard.on .bcard-sel{opacity:1;}
+.date-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;-webkit-overflow-scrolling:touch;}
+.date-row::-webkit-scrollbar{height:3px;}
+.date-row::-webkit-scrollbar-thumb{background:var(--or);}
+.dchip{flex-shrink:0;width:50px;padding:8px 3px;border-radius:7px;background:var(--bg4);border:1px solid var(--bd);color:var(--gy);cursor:pointer;transition:all .15s;text-align:center;}
+.dchip .dn{font-size:.53rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px;}
+.dchip .dd{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;line-height:1;}
+.dchip:hover:not(.dis){border-color:var(--or);color:var(--wh);}
+.dchip.on{background:var(--or);border-color:var(--or);color:#fff;}
+.dchip.dis{opacity:.25;cursor:not-allowed;}
+.slot-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+.slot{padding:7px 10px;border-radius:6px;background:var(--bg4);border:1px solid var(--bd);color:var(--gy);font-size:.72rem;font-weight:600;cursor:pointer;transition:all .15s;}
+.slot:hover:not(.tk){border-color:var(--or);color:var(--wh);}
+.slot.on{background:var(--or);border-color:var(--or);color:#fff;}
+.slot.tk{opacity:.2;cursor:not-allowed;text-decoration:line-through;}
+.sum-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd);font-size:.77rem;}
+.sum-row:last-of-type{border:none;}
+.sum-key{color:var(--gy);}
+.sum-val{font-weight:600;text-align:right;max-width:55%;}
+.tot-box{background:rgba(255,101,0,.07);border:1px solid rgba(255,101,0,.2);border-radius:8px;padding:12px;text-align:center;margin:12px 0;}
+.tot-box .ta{font-size:.63rem;color:var(--gy);text-transform:uppercase;letter-spacing:.1em;}
+.tot-box .tn{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;color:var(--or);line-height:1;}
+.pay-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.popt{background:var(--bg4);border:1px solid var(--bd);border-radius:8px;padding:12px;cursor:pointer;transition:all .2s;text-align:center;}
+.popt:hover,.popt.on{border-color:var(--or);background:rgba(255,101,0,.06);}
+.popt-ic{font-size:1.3rem;margin-bottom:4px;}
+.popt-lbl{font-size:.68rem;font-weight:700;}
+.popt.on .popt-lbl{color:var(--or);}
+.tdata{background:var(--bg4);border:1px solid var(--bd);border-radius:8px;padding:13px;font-size:.73rem;margin-bottom:10px;}
+.tdata h4{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--or);margin-bottom:8px;}
+.trow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd);flex-wrap:wrap;gap:4px;}
+.trow:last-of-type{border:none;}
+.trow .tk2{color:var(--gy);}
+.cpb{background:rgba(255,101,0,.1);border:1px solid rgba(255,101,0,.2);color:var(--or3);font-size:.58rem;padding:2px 5px;border-radius:4px;cursor:pointer;margin-left:4px;}
+.cpb:hover{background:var(--or);color:#fff;}
+
+/* MODAL */
+.moverlay{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:1500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:20px;}
+.moverlay.hide{display:none;}
+.mbox{background:var(--bg3);border:1px solid var(--bd);border-radius:14px;padding:24px;max-width:440px;width:100%;animation:pop .3s cubic-bezier(.34,1.56,.64,1);max-height:90vh;overflow-y:auto;}
+.mbox h3{font-family:'Bebas Neue',sans-serif;font-size:1.35rem;letter-spacing:.04em;color:var(--or);margin-bottom:12px;}
+.mbox p{font-size:.78rem;color:var(--gy);line-height:1.7;margin-bottom:14px;}
+.mdet{background:var(--bg4);border:1px solid var(--bd);border-radius:8px;padding:14px;margin-bottom:15px;}
+.mdet .mdr{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:.77rem;gap:8px;}
+.mdet .mdr:last-of-type{border:none;}
+.mdet .mdr .mk{color:var(--gy);flex-shrink:0;}
+.mdet .mdr .mv{font-weight:700;text-align:right;}
+.pay-rem{background:rgba(255,101,0,.07);border:1px solid rgba(255,101,0,.2);border-radius:7px;padding:11px;font-size:.72rem;line-height:1.6;margin-bottom:14px;}
+.pay-rem b{color:var(--or);}
+
+/* TOAST */
+.toast-el{position:fixed;bottom:18px;right:18px;z-index:3000;background:var(--bg3);border:1px solid var(--bd);border-left:3px solid var(--or);border-radius:9px;padding:12px 16px;max-width:270px;box-shadow:0 6px 28px rgba(0,0,0,.5);transform:translateX(120%);transition:transform .4s cubic-bezier(.34,1.56,.64,1);}
+.toast-el.on{transform:translateX(0);}
+.toast-el b{display:block;color:var(--or);margin-bottom:2px;font-size:.82rem;}
+.toast-el p{font-size:.7rem;color:var(--gy);}
+.toast-el.err{border-left-color:var(--re);}
+.toast-el.err b{color:var(--re);}
+
+/* QR */
+.qr-wrap{display:inline-block;background:#fff;padding:14px;border-radius:12px;}
+
+/* MOBILE */
+@media(max-width:768px){
+  .sidebar{position:fixed;top:0;left:0;bottom:0;transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);box-shadow:4px 0 20px rgba(0,0,0,.5);}
+  .ham{display:block;}
+  .clk{display:none;}
+  .content{padding:14px;}
+  .srv-grid{grid-template-columns:repeat(2,1fr);}
+  .bar-grid{grid-template-columns:1fr;}
+  .fr2{grid-template-columns:1fr;}
+  .book-wrap{display:block !important;}
+  .book-sum{position:static !important;margin-top:16px;}
+  .sg4{grid-template-columns:1fr 1fr;}
+  .sg3{grid-template-columns:1fr 1fr;}
+  .adm-wrap{display:block !important;}
+  .adm-wrap > div:first-child{margin-bottom:16px;}
+  .fin-wrap{display:block !important;}
+  .fin-wrap > div:first-child{margin-bottom:16px;}
+  .pay-wrap{display:block !important;}
+  .pay-wrap > div:first-child{margin-bottom:16px;}
+  .cal-wrap{display:block !important;}
+  .cal-wrap > div:first-child{margin-bottom:16px;}
+  .stf-wrap{display:block !important;}
+  .cfg-wrap{display:block !important;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast-el" id="toastEl"><b id="tTit"></b><p id="tMsg"></p></div>
+
+<!-- MODAL CONFIRMACION -->
+<div class="moverlay hide" id="mConfirm">
+  <div class="mbox" style="text-align:center;">
+    <div style="font-size:2.8rem;margin-bottom:10px;animation:pop .5s .2s cubic-bezier(.34,1.56,.64,1) both;">✅</div>
+    <h3>¡Hora Confirmada!</h3>
+    <p>Tu reserva fue guardada exitosamente.</p>
+    <div class="mdet" id="mConDet"></div>
+    <div class="pay-rem" id="mConPay"></div>
+    <button class="bsm pri" style="width:100%;padding:12px;" onclick="hideM('mConfirm')">¡Nos vemos! ✂</button>
+  </div>
+</div>
+
+<!-- MODAL NUEVA RESERVA MANUAL -->
+<div class="moverlay hide" id="mNewBook">
+  <div class="mbox">
+    <h3>➕ Nueva Reserva</h3>
+    <div class="fr2">
+      <div class="fld"><label class="flbl">Nombre *</label><input type="text" class="finp" id="mn-name" placeholder="Cliente"/></div>
+      <div class="fld"><label class="flbl">Teléfono *</label><input type="text" class="finp" id="mn-phone" placeholder="+56 9..."/></div>
+    </div>
+    <div class="fld"><label class="flbl">Servicio *</label>
+      <select class="finp" id="mn-srv">
+        <option value="">— Servicio —</option>
+        <option value="Barba|4000|30 min">🪒 Barba — $4.000</option>
+        <option value="Corte Clásico / Escolar|6000|40 min">✂️ Corte Clásico / Escolar — $6.000</option>
+        <option value="Bebés (menores de 3 años)|8000|30 min">👶 Bebés — $8.000</option>
+        <option value="Degradé (Fade)|10000|50 min">💈 Degradé — $10.000</option>
+        <option value="Corte + Barba|14000|60 min">⚡ Corte + Barba — $14.000</option>
+        <option value="Cejas|2000|15 min">✨ Cejas — $2.000</option>
+        <option value="Diseño|2000|20 min">🎨 Diseño — desde $2.000</option>
+      </select>
+    </div>
+    <div class="fr2">
+      <div class="fld"><label class="flbl">Barbero *</label>
+        <select class="finp" id="mn-barber">
+          <option value="">— Barbero —</option>
+          <option>Karen Monsalve</option><option>Ignacio Pérez</option><option>Franco Jaramillo</option>
+        </select>
+      </div>
+      <div class="fld"><label class="flbl">Hora *</label>
+        <select class="finp" id="mn-time">
+          <option>09:00</option><option>09:30</option><option>10:00</option><option>10:30</option>
+          <option>11:00</option><option>11:30</option><option>12:00</option><option>12:30</option>
+          <option>14:00</option><option>14:30</option><option>15:00</option><option>15:30</option>
+          <option>16:00</option><option>16:30</option><option>17:00</option><option>17:30</option>
+        </select>
+      </div>
+    </div>
+    <div class="fld"><label class="flbl">Pago</label>
+      <select class="finp" id="mn-pay"><option value="transfer">🏦 Transferencia</option><option value="local">💵 En local</option></select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="bsm pri" style="flex:1;padding:11px;" id="mnBtn" onclick="saveManual()">Guardar</button>
+      <button class="bsm" style="padding:11px 16px;" onclick="hideM('mNewBook')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADER -->
+<div id="scrLoader">
+  <div class="load-logo">BARBER<span>URBAN</span></div>
+  <div class="load-spin"></div>
+  <div class="load-txt" id="loaderTxt">Conectando...</div>
+</div>
+
+<!-- LOGIN -->
+<div id="scrLogin">
+  <div class="login-bg"></div>
+  <div class="lbox">
+    <div class="llogo">
+      <div class="llogo-t">BARBER<span>URBAN</span></div>
+      <p>Sistema de reservas</p>
+    </div>
+    <div class="tabbar" id="mainTabs">
+      <button onclick="switchMain('client',this)" class="on">👤 Soy cliente</button>
+      <button onclick="switchMain('staff',this)">✂ Soy staff</button>
+    </div>
+
+    <!-- PANEL CLIENTE -->
+    <div class="tpanel on" id="panel-client">
+      <div class="tabbar" id="subTabs">
+        <button onclick="switchSub('login',this)" class="on">Ingresar</button>
+        <button onclick="switchSub('register',this)">Registrarse</button>
+      </div>
+      <!-- LOGIN CLIENTE -->
+      <div class="tpanel on" id="panel-login">
+        <div class="fld">
+          <label class="flbl">Correo electrónico</label>
+          <input type="email" class="finp" id="cl-email" placeholder="tu@correo.cl" autocomplete="email"/>
+        </div>
+        <div class="fld">
+          <label class="flbl">Contraseña</label>
+          <input type="password" class="finp" id="cl-pw" placeholder="Tu contraseña" autocomplete="current-password"/>
+        </div>
+        <button class="lbtn" id="btnLoginCl" onclick="loginClient()">Ingresar →</button>
+      </div>
+      <!-- REGISTRO CLIENTE -->
+      <div class="tpanel" id="panel-register">
+        <div class="fr2">
+          <div class="fld">
+            <label class="flbl">Nombre *</label>
+            <input type="text" class="finp" id="rg-name" placeholder="Tu nombre" autocomplete="given-name"/>
+          </div>
+          <div class="fld">
+            <label class="flbl">Teléfono *</label>
+            <input type="tel" class="finp" id="rg-phone" placeholder="+56 9..." autocomplete="tel"/>
+          </div>
+        </div>
+        <div class="fld">
+          <label class="flbl">Correo *</label>
+          <input type="email" class="finp" id="rg-email" placeholder="tu@correo.cl" autocomplete="email"/>
+        </div>
+        <div class="fld">
+          <label class="flbl">Contraseña *</label>
+          <input type="password" class="finp" id="rg-pw" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+        </div>
+        <button class="lbtn" id="btnRegCl" onclick="registerClient()">Crear cuenta →</button>
+      </div>
+      <div class="lerr" id="clientErr"></div>
+    </div>
+
+    <!-- PANEL STAFF -->
+    <div class="tpanel" id="panel-staff">
+      <div class="ucards">
+        <div class="ucard" data-uid="karen" onclick="pickStaff(this)">
+          <div class="ucav" style="background:linear-gradient(135deg,#2a0020,#400030);">💇‍♀️</div>
+          <div><div class="ucn">Karen Monsalve</div><div class="ucr" style="color:var(--ye);">👑 Administradora</div></div>
+          <div class="ucbadge bj">JEFA</div>
+        </div>
+        <div class="ucard" data-uid="ignacio" onclick="pickStaff(this)">
+          <div class="ucav" style="background:linear-gradient(135deg,#08101a,#101830);">✂️</div>
+          <div><div class="ucn">Ignacio Pérez</div><div class="ucr" style="color:var(--or3);">Barber</div></div>
+          <div class="ucbadge bb">BARBER</div>
+        </div>
+        <div class="ucard" data-uid="franco" onclick="pickStaff(this)">
+          <div class="ucav" style="background:linear-gradient(135deg,#001008,#001e10);">💈</div>
+          <div><div class="ucn">Franco Jaramillo</div><div class="ucr" style="color:var(--or3);">Barber</div></div>
+          <div class="ucbadge bb">BARBER</div>
+        </div>
+      </div>
+      <div class="fld">
+        <label class="flbl">Contraseña</label>
+        <input type="password" class="finp" id="staff-pw" placeholder="Ingresa tu contraseña" autocomplete="current-password"/>
+      </div>
+      <button class="lbtn" id="btnLoginSt" onclick="loginStaff()">Ingresar al panel →</button>
+      <div class="lerr" id="staffErr"></div>
+      <div class="lhint">Demo: <b>Karen</b>: karen2025 · <b>Ignacio</b>: igna123 · <b>Franco</b>: franco123</div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY MOBILE -->
+<div class="overlay-bg" id="overlayBg" onclick="closeSb()"></div>
+
+<!-- DASHBOARD -->
+<div id="scrDash">
+  <div class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-t">BARBER<span>URBAN</span></div>
+      <p>Panel v4</p>
+      <div class="sb-badge">🟢 Supabase</div>
+    </div>
+    <div class="sb-me" id="sbMe"></div>
+    <nav class="sb-nav" id="sbNav"></nav>
+    <div class="sb-bot"><div class="sb-out" onclick="doLogout()"><span>🚪</span>Cerrar sesión</div></div>
+  </div>
+  <div class="main-area">
+    <div class="topbar">
+      <div class="tb-l">
+        <button class="ham" onclick="openSb()">☰</button>
+        <div class="tb-title" id="tbTitle">INICIO</div>
+        <div id="tbChip"></div>
+      </div>
+      <div class="tb-r">
+        <div class="live-dot"></div>
+        <span class="clk" id="clk"></span>
+        <button class="bsm pri" id="tbNewBtn" style="display:none;" onclick="showM('mNewBook')">+ Reserva</button>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   BARBER URBAN v4.3
+   - Staff login con fallback local garantizado
+   - Client login sin .single() (fix 401/PGRST116)
+   - Register con check de duplicado explícito
+   - Panel registro visible y funcional
+   - QR pequeño para invitados (sin registro)
+═══════════════════════════════════════════════ */
+
+var DB = supabase.createClient(
+  'https://vnsfjhjqdqygwhzmjpea.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuc2ZqaGpxZHF5Z3doem1qcGVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMTc1NDEsImV4cCI6MjA5NTU5MzU0MX0.M50Gwf-yhpGxkPF454oCFCqvrVA54s_o05VhiKed-f8'
+);
+
+/* ── STAFF siempre disponible (fallback + Supabase) ── */
+var STAFF = {
+  karen:   {id:'karen',  name:'Karen Monsalve',  role:'admin',  pw:'karen2025', avatar:'💇‍♀️', color:'#ffd600', bg:'#2a0020'},
+  ignacio: {id:'ignacio',name:'Ignacio Pérez',   role:'barber', pw:'igna123',   avatar:'✂️',   color:'#ff8c30', bg:'#08101a'},
+  franco:  {id:'franco', name:'Franco Jaramillo',role:'barber', pw:'franco123', avatar:'💈',   color:'#ff8c30', bg:'#001008'}
+};
+
+var SERVICES = [
+  {id:'s1',name:'Barba',                  icon:'🪒',price:4000, dur:'30 min'},
+  {id:'s2',name:'Corte Clásico / Escolar',icon:'✂️',price:6000, dur:'40 min'},
+  {id:'s3',name:'Bebés (< 3 años)',        icon:'👶',price:8000, dur:'30 min'},
+  {id:'s4',name:'Degradé (Fade)',          icon:'💈',price:10000,dur:'50 min'},
+  {id:'s5',name:'Corte + Barba',           icon:'⚡',price:14000,dur:'60 min'},
+  {id:'s6',name:'Cejas',                   icon:'✨',price:2000, dur:'15 min'},
+  {id:'s7',name:'Diseño',                  icon:'🎨',price:2000, dur:'20 min'}
+];
+var BARBERS = [
+  {id:'b1',name:'Karen Monsalve', icon:'💇‍♀️',spec:'Degradés, Diseños, Cejas, Bebés'},
+  {id:'b2',name:'Ignacio Pérez',  icon:'✂️', spec:'Clásicos, Escolares, Barba, Fade'},
+  {id:'b3',name:'Franco Jaramillo',icon:'💈',spec:'Corte+Barba, Diseños, Cejas, Fade'}
+];
+var TIMES = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30',
+             '14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00'];
+var DAYS  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+/* ── Estado global ── */
+var CU      = null;
+var BOOKINGS = [];
+var CLIENTS  = [];
+var selStaff = null;
+var attempts = {count:0, blockedUntil:0};
+var BS = {srv:null, barber:null, date:null, time:null, pay:'transfer'};
+
+/* ════════ INIT ════════ */
+async function appInit() {
+  show('scrLoader');
+  setLT('Conectando...');
+  /* Intentar actualizar STAFF desde Supabase */
+  try {
+    var r = await DB.from('staff').select('*');
+    if (!r.error && r.data && r.data.length > 0) {
+      r.data.forEach(function(s){ STAFF[s.id] = s; });
+      setLT('✓ Conectado');
+    } else {
+      setLT('✓ Listo');
+    }
+  } catch(e) {
+    setLT('✓ Listo');
+  }
+  setTimeout(function(){
+    hide('scrLoader');
+    /* Detectar ?guest=1 en URL */
+    if (window.location.search.indexOf('guest=1') !== -1) {
+      startGuest();
+    } else {
+      show('scrLogin');
+    }
+  }, 600);
+}
+
+function setLT(t){ var el=document.getElementById('loaderTxt'); if(el) el.textContent=t; }
+
+function show(id){
+  var el = document.getElementById(id);
+  if(el) el.classList.add('on');
+}
+function hide(id){
+  var el = document.getElementById(id);
+  if(el) el.classList.remove('on');
+}
+
+/* ── CLOCK ── */
+setInterval(function(){
+  var el = document.getElementById('clk'); if(!el) return;
+  var n = new Date();
+  el.textContent = n.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+},1000);
+
+/* ── MOBILE ── */
+function openSb(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlayBg').classList.add('on'); }
+function closeSb(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlayBg').classList.remove('on'); }
+
+/* ── TABS ── */
+function switchMain(tab, btn){
+  document.querySelectorAll('#mainTabs button').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+  document.getElementById('panel-client').classList.toggle('on', tab==='client');
+  document.getElementById('panel-staff').classList.toggle('on',  tab==='staff');
+  clearErrs();
+}
+function switchSub(tab, btn){
+  document.querySelectorAll('#subTabs button').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+  document.getElementById('panel-login').classList.toggle('on',    tab==='login');
+  document.getElementById('panel-register').classList.toggle('on', tab==='register');
+  document.getElementById('clientErr').textContent = '';
+}
+function clearErrs(){
+  document.getElementById('clientErr').textContent = '';
+  document.getElementById('staffErr').textContent  = '';
+}
+
+/* ════════ AUTH STAFF ════════ */
+function pickStaff(el){
+  document.querySelectorAll('.ucard').forEach(function(c){ c.classList.remove('on'); });
+  el.classList.add('on');
+  selStaff = el.getAttribute('data-uid');
+  document.getElementById('staff-pw').focus();
+}
+
+async function loginStaff(){
+  if(!selStaff){
+    document.getElementById('staffErr').textContent = 'Selecciona tu perfil primero.';
+    return;
+  }
+  var now = Date.now();
+  if(now < attempts.blockedUntil){
+    document.getElementById('staffErr').textContent = '🔒 Bloqueado ' + Math.ceil((attempts.blockedUntil-now)/1000) + 's';
+    return;
+  }
+  var pw = document.getElementById('staff-pw').value;
+  if(!pw){ document.getElementById('staffErr').textContent = 'Ingresa tu contraseña.'; return; }
+
+  var user = STAFF[selStaff];
+  if(!user){ document.getElementById('staffErr').textContent = 'Error interno. Recarga la página.'; return; }
+
+  var btn = document.getElementById('btnLoginSt');
+  btn.disabled = true; btn.textContent = 'Verificando...';
+
+  /* Comparar contraseña */
+  var ok = (pw === user.pw);
+
+  /* Si no coincide con fallback, intentar Supabase por si cambió */
+  if(!ok){
+    try {
+      var r2 = await DB.from('staff').select('pw').eq('id', selStaff).limit(1);
+      if(!r2.error && r2.data && r2.data.length > 0){
+        STAFF[selStaff].pw = r2.data[0].pw;
+        ok = (pw === r2.data[0].pw);
+      }
+    } catch(e){}
+  }
+
+  if(ok){
+    attempts.count = 0;
+    CU = { id:user.id, name:user.name, role:user.role,
+           avatar:user.avatar||'👤', color:user.color||'#ff6500', bg:user.bg||'#1a1a1a',
+           type:'staff', email:'' };
+    await loadData();
+    btn.disabled=false; btn.textContent='Ingresar al panel →';
+    goDash();
+  } else {
+    attempts.count++;
+    if(attempts.count >= 5){
+      attempts.blockedUntil = Date.now() + 60000;
+      document.getElementById('staffErr').textContent = '🔒 Bloqueado 60s.';
+    } else {
+      document.getElementById('staffErr').textContent = '❌ Contraseña incorrecta. Quedan ' + (5-attempts.count) + ' intentos.';
+    }
+    shake('staff-pw');
+    btn.disabled=false; btn.textContent='Ingresar al panel →';
+  }
+}
+
+/* ════════ AUTH CLIENTE ════════ */
+async function loginClient(){
+  var email = document.getElementById('cl-email').value.trim().toLowerCase();
+  var pw    = document.getElementById('cl-pw').value;
+  if(!email||!pw){ document.getElementById('clientErr').textContent='Completa todos los campos.'; return; }
+
+  var btn = document.getElementById('btnLoginCl');
+  btn.disabled=true; btn.textContent='Verificando...';
+  try {
+    /* Usar .eq() + .limit(1) — NUNCA .single() para evitar error 406 */
+    var r = await DB.from('clients').select('*').eq('email',email).limit(1);
+    if(r.error) throw r.error;
+    if(!r.data || r.data.length===0){
+      document.getElementById('clientErr').textContent = 'Correo no registrado. ¿Quieres crear una cuenta?';
+      shake('cl-email');
+    } else if(r.data[0].pw !== pw){
+      document.getElementById('clientErr').textContent = 'Contraseña incorrecta.';
+      shake('cl-pw');
+    } else {
+      CU = Object.assign({}, r.data[0], {type:'client', avatar:'👤', color:'#00d4ff', bg:'#001018'});
+      await loadData();
+      btn.disabled=false; btn.textContent='Ingresar →';
+      goDash();
+      return;
+    }
+  } catch(e){
+    document.getElementById('clientErr').textContent = 'Error de conexión: ' + e.message;
+  }
+  btn.disabled=false; btn.textContent='Ingresar →';
+}
+
+async function registerClient(){
+  var nm = document.getElementById('rg-name').value.trim();
+  var ph = document.getElementById('rg-phone').value.trim();
+  var em = document.getElementById('rg-email').value.trim().toLowerCase();
+  var pw = document.getElementById('rg-pw').value;
+
+  if(!nm||!ph||!em||!pw){
+    document.getElementById('clientErr').textContent='Completa todos los campos.'; return;
+  }
+  if(pw.length<6){
+    document.getElementById('clientErr').textContent='Contraseña mínimo 6 caracteres.'; return;
+  }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){
+    document.getElementById('clientErr').textContent='Correo inválido.'; return;
+  }
+
+  var btn = document.getElementById('btnRegCl');
+  btn.disabled=true; btn.textContent='Creando cuenta...';
+
+  try {
+    /* Verificar duplicado */
+    var chk = await DB.from('clients').select('id').eq('email',em).limit(1);
+    if(!chk.error && chk.data && chk.data.length>0){
+      document.getElementById('clientErr').textContent='Este correo ya está registrado. Ingresa con tu cuenta.';
+      btn.disabled=false; btn.textContent='Crear cuenta →';
+      return;
+    }
+    var newId = 'CL-'+Date.now();
+    var ins = await DB.from('clients').insert({id:newId,name:nm,phone:ph,email:em,pw:pw,role:'client'}).select();
+    if(ins.error) throw ins.error;
+    var created = ins.data[0];
+    CU = Object.assign({}, created, {type:'client', avatar:'👤', color:'#00d4ff', bg:'#001018'});
+    await loadData();
+    toast('✓ Cuenta creada','¡Bienvenido/a '+nm+'!');
+    btn.disabled=false; btn.textContent='Crear cuenta →';
+    goDash();
+  } catch(e){
+    document.getElementById('clientErr').textContent = 'Error: '+e.message;
+    btn.disabled=false; btn.textContent='Crear cuenta →';
+  }
+}
+
+/* ════════ GUEST (QR sin registro) ════════ */
+function startGuest(){
+  CU = {id:'guest', name:'Invitado', role:'client', email:'', phone:'', avatar:'👤', color:'#00d4ff', bg:'#001018', type:'guest'};
+  loadData().then(function(){
+    hide('scrLoader');
+    hide('scrLogin');
+    show('scrDash');
+    buildGuestDash();
+  });
+}
+
+function buildGuestDash(){
+  document.getElementById('sbMe').innerHTML =
+    '<div class="sb-av" style="background:linear-gradient(135deg,#001018,#001a2a);">📱</div>' +
+    '<div><div class="sb-nm">Reserva Rápida</div><div class="sb-rl" style="color:var(--cy);font-size:.6rem;">Sin registro · Invitado</div></div>';
+  document.getElementById('tbChip').innerHTML = '<span class="tb-chip tc-client">📱 Invitado</span>';
+  document.getElementById('tbNewBtn').style.display = 'none';
+  document.getElementById('sbNav').innerHTML =
+    '<div class="sb-sec">Reserva</div>' +
+    '<div class="sbi on" onclick="goPage(\'book\',this)"><span class="ic">📅</span>Agendar mi hora</div>';
+  goPage('book', null);
+}
+
+/* ════════ DATA ════════ */
+async function loadData(){
+  try {
+    var r1 = await DB.from('bookings').select('*').order('created_at',{ascending:false});
+    var r2 = await DB.from('clients').select('*');
+    BOOKINGS = r1.data||[];
+    CLIENTS  = r2.data||[];
+  } catch(e){ BOOKINGS=[]; CLIENTS=[]; }
+}
+
+/* ════════ DASH ════════ */
+function goDash(){
+  hide('scrLogin');
+  show('scrDash');
+  buildDash();
+}
+
+function doLogout(){
+  CU=null; selStaff=null; BS={srv:null,barber:null,date:null,time:null,pay:'transfer'};
+  closeSb();
+  hide('scrDash');
+  document.getElementById('staff-pw').value='';
+  document.getElementById('cl-email').value='';
+  document.getElementById('cl-pw').value='';
+  document.querySelectorAll('.ucard').forEach(function(c){c.classList.remove('on');});
+  clearErrs();
+  /* Si venía de QR, volver a login normal */
+  if(window.location.search.indexOf('guest=1')!==-1){
+    window.location.href = window.location.pathname;
+  } else {
+    show('scrLogin');
+  }
+}
+
+function buildDash(){
+  var u = CU;
+  var rl = u.role==='admin'?'👑 Jefa · Admin':u.role==='barber'?'✂ Barber':'👤 Cliente';
+  document.getElementById('sbMe').innerHTML =
+    '<div class="sb-av" style="background:linear-gradient(135deg,'+(u.bg||'#1a1a1a')+','+(u.bg||'#333')+'88);">'+(u.avatar||'👤')+'</div>' +
+    '<div><div class="sb-nm">'+u.name+'</div><div class="sb-rl" style="color:'+(u.color||'#ff6500')+';font-size:.6rem;">'+rl+'</div></div>';
+  var cm = {admin:'tc-admin',barber:'tc-barber',client:'tc-client'};
+  var cl = {admin:'👑 Admin',barber:'✂ Barber',client:'👤 Cliente'};
+  document.getElementById('tbChip').innerHTML = '<span class="tb-chip '+cm[u.role]+'">'+cl[u.role]+'</span>';
+  document.getElementById('tbNewBtn').style.display = u.role==='admin'?'block':'none';
+  buildNav();
+  goPage('home',null);
+}
+
+function buildNav(){
+  var u=CU, h='';
+  if(u.type==='client'){
+    h += '<div class="sb-sec">Mi cuenta</div>' +
+      nav('home','🏠','Inicio') +
+      nav('book','📅','Agendar hora','nb','+') +
+      nav('my-bookings','📋','Mis reservas','nb',myBk().length);
+  } else if(u.role==='barber'){
+    h += '<div class="sb-sec">Mi panel</div>' +
+      nav('home','🏠','Inicio') +
+      nav('my-schedule','📅','Mi agenda','nb',myBarBk().length) +
+      nav('my-stats','📊','Mis estadísticas');
+  } else {
+    h += '<div class="sb-sec">Principal</div>' +
+      nav('home','🏠','Resumen') +
+      nav('all-bookings','📋','Reservas','nb',BOOKINGS.length) +
+      nav('calendar','📅','Calendario') +
+      '<div class="sb-sec">Finanzas</div>' +
+      nav('finance','💰','Finanzas') +
+      nav('payments','💳','Pagos & Banco') +
+      '<div class="sb-sec">Gestión</div>' +
+      nav('staff-panel','👥','Staff') +
+      nav('clients-panel','👤','Clientes') +
+      nav('config','⚙️','Configuración') +
+      nav('qr','📱','Código QR');
+  }
+  document.getElementById('sbNav').innerHTML = h;
+}
+
+function nav(pg, ic, label, badgeCls, badgeVal){
+  var badge = badgeCls ? '<span class="'+badgeCls+'">'+badgeVal+'</span>' : '';
+  return '<div class="sbi" onclick="goPage(\''+pg+'\',this)"><span class="ic">'+ic+'</span>'+label+badge+'</div>';
+}
+
+function myBk(){ return BOOKINGS.filter(function(b){ return b.client_id===CU.id||b.client_email===CU.email; }); }
+function myBarBk(){ return BOOKINGS.filter(function(b){ return b.barber===CU.name; }); }
+
+async function goPage(pg, el){
+  closeSb();
+  document.querySelectorAll('.sbi').forEach(function(i){i.classList.remove('on');});
+  if(el) el.classList.add('on');
+  var titles={home:'INICIO',book:'AGENDAR HORA','my-bookings':'MIS RESERVAS',
+    'my-schedule':'MI AGENDA','my-stats':'MIS ESTADÍSTICAS',
+    'all-bookings':'RESERVAS',calendar:'CALENDARIO',finance:'FINANZAS',
+    payments:'PAGOS & BANCO','staff-panel':'STAFF','clients-panel':'CLIENTES',
+    config:'CONFIGURACIÓN',qr:'CÓDIGO QR'};
+  document.getElementById('tbTitle').textContent = titles[pg]||pg.toUpperCase();
+  await loadData();
+  buildNav();
+  document.getElementById('content').innerHTML = '<div style="animation:fadeUp .3s ease;">'+buildPg(pg)+'</div>';
+  if(pg==='book') initBook();
+  if(pg==='qr')   setTimeout(buildQR, 150);
+}
+
+/* ════════ PÁGINAS ════════ */
+function buildPg(pg){
+  if(pg==='home') return CU.type==='client'?pgClientHome():CU.role==='barber'?pgBarberHome():pgAdminHome();
+  if(pg==='book')          return pgBook();
+  if(pg==='my-bookings')   return pgMyBookings();
+  if(pg==='my-schedule')   return pgMySchedule();
+  if(pg==='my-stats')      return pgMyStats();
+  if(pg==='all-bookings')  return pgAllBookings();
+  if(pg==='calendar')      return pgCalendar();
+  if(pg==='finance')       return pgFinance();
+  if(pg==='payments')      return pgPayments();
+  if(pg==='staff-panel')   return pgStaff();
+  if(pg==='clients-panel') return pgClients();
+  if(pg==='config')        return pgConfig();
+  if(pg==='qr')            return pgQR();
+  return '';
+}
+
+/* CLIENT HOME */
+function pgClientHome(){
+  var bks=myBk(); var next=bks[0];
+  var tot=bks.reduce(function(s,b){return s+b.price;},0);
+  return '<div class="sg3">' +
+    sc('cy','📋',bks.length,'Reservas') +
+    sc('gr','✅',bks.filter(function(b){return b.status==='confirmado';}).length,'Confirmadas') +
+    sc('or','💰','$'+Math.round(tot/1000)+'k','Gastado') +
+    '</div>' +
+    (next?'<div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:11px;padding:16px;margin-bottom:16px;">'+
+    '<div style="font-size:.64rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cy);margin-bottom:7px;">📅 PRÓXIMA CITA</div>'+
+    '<div style="font-size:1rem;font-weight:700;">'+next.srv+'</div>'+
+    '<div style="font-size:.78rem;color:var(--gy);margin-top:3px;">'+next.barber+' · '+next.date+' · '+next.time+' hrs</div>'+
+    '<div style="margin-top:8px;">'+(next.pay==='transfer'?'<span class="chip cy2">🏦 Transfer</span>':'<span class="chip cg">💵 Local</span>')+'</div>'+
+    '</div>':'') +
+    '<div style="background:rgba(255,101,0,.06);border:1px solid rgba(255,101,0,.2);border-radius:11px;padding:20px;text-align:center;">'+
+    '<div style="font-size:2rem;margin-bottom:10px;">✂️</div>'+
+    '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.4rem;letter-spacing:.04em;margin-bottom:7px;">¿LISTO PARA TU CORTE?</div>'+
+    '<div style="font-size:.8rem;color:var(--gy);margin-bottom:14px;">Agenda tu hora en segundos.</div>'+
+    '<button class="bsm pri" style="padding:12px 28px;" onclick="goPage(\'book\',null)">Agendar hora →</button>'+
+    '</div>';
+}
+
+/* BARBER HOME */
+function pgBarberHome(){
+  var bks=myBarBk();
+  var today=new Date().toLocaleDateString('es-CL',{day:'numeric',month:'short'});
+  var todayBks=bks.filter(function(b){return b.date===today;});
+  return '<div class="sg3">' +
+    sc('or','📋',bks.length,'Mis reservas') +
+    sc('cy','📅',todayBks.length,'Hoy') +
+    sc('gr','⏱',TIMES.length-todayBks.length,'Slots libres') +
+    '</div>'+
+    '<div class="sec-hd"><h3>MIS PRÓXIMAS CITAS</h3></div>'+
+    '<div class="tw"><div class="tscroll"><table><thead><tr><th>Cliente</th><th>Servicio</th><th>Hora</th><th>Fecha</th><th>Pago</th></tr></thead><tbody>'+
+    (bks.length?bks.slice(0,6).map(function(b){
+      return '<tr><td><strong>'+b.client_name+'</strong></td><td>'+b.srv+'</td><td style="color:var(--or);font-weight:700;">'+b.time+'</td><td style="color:var(--gy);">'+b.date+'</td><td>'+(b.pay==='transfer'?'<span class="chip cy2">🏦</span>':'<span class="chip cg">💵</span>')+'</td></tr>';
+    }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--gy);padding:20px;">Sin reservas asignadas.</td></tr>')+
+    '</tbody></table></div></div>';
+}
+
+/* ADMIN HOME */
+function pgAdminHome(){
+  var tot=BOOKINGS.reduce(function(s,b){return s+b.price;},0);
+  var today=new Date().toLocaleDateString('es-CL',{day:'numeric',month:'short'});
+  var todayBks=BOOKINGS.filter(function(b){return b.date===today;});
+  return '<div class="sg4">' +
+    sc('or','📋',BOOKINGS.length,'Reservas') +
+    sc('gr','💰','$'+Math.round(tot/1000)+'k','Ingresos') +
+    sc('cy','📅',todayBks.length,'Hoy') +
+    sc('pu','👤',CLIENTS.length,'Clientes') +
+    '</div>'+
+    '<div class="adm-wrap" style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">'+
+    '<div>'+
+    '<div class="sec-hd"><h3>RECIENTES</h3><button class="bsm" onclick="goPage(\'all-bookings\',null)">Ver todas</button></div>'+
+    '<div class="tw"><div class="tscroll"><table><thead><tr><th>Cliente</th><th>Servicio</th><th>Barbero</th><th>Hora</th><th>Total</th><th>Pago</th></tr></thead><tbody>'+
+    (BOOKINGS.length?BOOKINGS.slice(0,5).map(function(b){
+      return '<tr><td><strong>'+b.client_name+'</strong></td><td>'+b.srv+'</td><td>'+b.barber.split(' ')[0]+'</td><td style="color:var(--or);">'+b.time+'</td><td style="color:var(--or);font-weight:700;">$'+b.price.toLocaleString('es-CL')+'</td><td>'+(b.pay==='transfer'?'<span class="chip cy2">🏦</span>':'<span class="chip cg">💵</span>')+'</td></tr>';
+    }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--gy);padding:18px;">Sin reservas aún.</td></tr>')+
+    '</tbody></table></div></div></div>'+
+    '<div><div class="sec-hd"><h3>HOY</h3></div><div class="tw" style="padding:14px;">'+
+    '<div style="text-align:center;margin-bottom:12px;"><div style="font-family:\'Bebas Neue\',sans-serif;font-size:2rem;color:var(--or);">$'+todayBks.reduce(function(s,b){return s+b.price;},0).toLocaleString('es-CL')+'</div><div style="font-size:.64rem;color:var(--gy);text-transform:uppercase;">Ingresos del día</div></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px;">'+
+    '<div style="background:var(--bg4);border:1px solid var(--bd);border-radius:7px;padding:9px;text-align:center;"><div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.3rem;color:var(--cy);">'+BOOKINGS.filter(function(b){return b.pay==='transfer';}).length+'</div><div style="font-size:.58rem;color:var(--gy);">Transf.</div></div>'+
+    '<div style="background:var(--bg4);border:1px solid var(--bd);border-radius:7px;padding:9px;text-align:center;"><div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.3rem;color:var(--gr);">'+BOOKINGS.filter(function(b){return b.pay==='local';}).length+'</div><div style="font-size:.58rem;color:var(--gy);">Local</div></div>'+
+    '</div>'+
+    ['Karen Monsalve','Ignacio Pérez','Franco Jaramillo'].map(function(nm){
+      var cnt=BOOKINGS.filter(function(b){return b.barber===nm;}).length;
+      var pct=BOOKINGS.length?Math.round(cnt/BOOKINGS.length*100):0;
+      return '<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:.68rem;margin-bottom:3px;"><span>'+nm.split(' ')[0]+'</span><span style="color:var(--or);">'+cnt+'</span></div><div style="height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:var(--or);border-radius:2px;"></div></div></div>';
+    }).join('')+
+    '</div></div></div>';
+}
+
+/* BOOK PAGE */
+function pgBook(){
+  var srvH = SERVICES.map(function(s){
+    return '<div class="scard" data-sid="'+s.id+'" data-name="'+s.name+'" data-price="'+s.price+'" data-dur="'+s.dur+'" onclick="selSrv(this)">'+
+      '<div class="scard-chk">✓</div><div style="font-size:1.6rem;margin-bottom:6px;">'+s.icon+'</div>'+
+      '<div style="font-size:.72rem;font-weight:700;margin-bottom:3px;">'+s.name+'</div>'+
+      '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.15rem;color:var(--or);">$'+s.price.toLocaleString('es-CL')+'</div>'+
+      '<div style="font-size:.58rem;color:var(--gy);margin-top:2px;">⏱ '+s.dur+'</div></div>';
+  }).join('');
+  var barH = BARBERS.map(function(b){
+    var bg=b.id==='b1'?'#2a0020,#400030':b.id==='b2'?'#08101a,#101830':'#001008,#001e10';
+    return '<div class="bcard" data-bid="'+b.id+'" data-bname="'+b.name+'" onclick="selBar(this)">'+
+      '<div class="bcard-sel">✓</div>'+
+      '<div class="bcard-av" style="background:linear-gradient(135deg,'+bg+')">'+b.icon+'</div>'+
+      '<div style="font-weight:700;font-size:.78rem;margin-bottom:2px;">'+b.name+'</div>'+
+      '<div style="font-size:.62rem;color:var(--or3);">'+b.spec+'</div>'+
+      '<div style="font-size:.62rem;color:var(--gr);margin-top:5px;display:flex;align-items:center;justify-content:center;gap:3px;"><span style="width:5px;height:5px;border-radius:50%;background:var(--gr);display:block;"></span>Disponible</div></div>';
+  }).join('');
+  return '<div class="book-wrap" style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start;">'+
+    '<div>'+
+    '<div class="sec-hd" style="margin-bottom:10px;"><h3>1. SERVICIO</h3></div>'+
+    '<div class="srv-grid">'+srvH+'</div>'+
+    '<div class="sec-hd" style="margin-bottom:10px;"><h3>2. BARBERO</h3></div>'+
+    '<div class="bar-grid">'+barH+'</div>'+
+    '<div class="sec-hd" style="margin-bottom:8px;"><h3>3. FECHA & HORA</h3></div>'+
+    '<div class="date-row" id="dateRow"></div>'+
+    '<div class="slot-wrap" id="slotWrap"></div>'+
+    '<div class="sec-hd" style="margin-bottom:8px;"><h3>4. TUS DATOS</h3></div>'+
+    '<div class="fr2">'+
+    '<div class="fld"><label class="flbl">Nombre *</label><input type="text" class="finp" id="bk-name" value="'+(CU.type!=='guest'?CU.name||'':'')+'" placeholder="Tu nombre"/></div>'+
+    '<div class="fld"><label class="flbl">Teléfono *</label><input type="text" class="finp" id="bk-phone" value="'+(CU.phone||'')+'" placeholder="+56 9..."/></div>'+
+    '</div>'+
+    '<div class="fld"><label class="flbl">Notas</label><input type="text" class="finp" id="bk-notes" placeholder="Ej: fade bajo con línea"/></div>'+
+    '</div>'+
+    '<div class="book-sum" style="position:sticky;top:0;">'+
+    '<div class="sec-hd"><h3>RESUMEN</h3></div>'+
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:11px;padding:16px;">'+
+    '<div id="sumE" style="color:var(--gy);font-size:.78rem;text-align:center;padding:16px 0;">Selecciona servicio y barbero.</div>'+
+    '<div id="sumD" style="display:none;">'+
+    '<div class="sum-row"><span class="sum-key">Servicio</span><span class="sum-val" id="sv-s">—</span></div>'+
+    '<div class="sum-row"><span class="sum-key">Barbero</span><span class="sum-val" id="sv-b">—</span></div>'+
+    '<div class="sum-row"><span class="sum-key">Fecha</span><span class="sum-val" id="sv-d">—</span></div>'+
+    '<div class="sum-row"><span class="sum-key">Hora</span><span class="sum-val" id="sv-t">—</span></div>'+
+    '<div class="sum-row"><span class="sum-key">Duración</span><span class="sum-val" id="sv-du">—</span></div>'+
+    '<div class="tot-box"><div class="ta">Total a pagar</div><div class="tn" id="sv-tot">$0</div><div style="font-size:.62rem;color:var(--gy);margin-top:2px;">Pesos chilenos (CLP)</div></div>'+
+    '<div style="font-size:.64rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gy);margin-bottom:7px;">Método de pago</div>'+
+    '<div class="pay-opts">'+
+    '<div class="popt on" id="po-transfer" onclick="selPay(\'transfer\')"><div class="popt-ic">🏦</div><div class="popt-lbl">Transferencia</div></div>'+
+    '<div class="popt" id="po-local" onclick="selPay(\'local\')"><div class="popt-ic">💵</div><div class="popt-lbl">En el local</div></div>'+
+    '</div>'+
+    '<div class="tdata" id="tdBox"><h4>🏦 Datos transferencia</h4>'+
+    '<div class="trow"><span class="tk2">Banco</span><span>Banco de Chile</span></div>'+
+    '<div class="trow"><span class="tk2">RUT</span><span>12.345.678-9 <button class="cpb" onclick="copyTxt(\'12.345.678-9\')">Copiar</button></span></div>'+
+    '<div class="trow"><span class="tk2">Cuenta</span><span>00-123-456789-0 <button class="cpb" onclick="copyTxt(\'00-123-456789-0\')">Copiar</button></span></div>'+
+    '<div class="trow"><span class="tk2">Correo</span><span style="font-size:.66rem;">pagos@barberurban.cl <button class="cpb" onclick="copyTxt(\'pagos@barberurban.cl\')">Copiar</button></span></div>'+
+    '</div>'+
+    '<div id="localBox" style="display:none;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:11px;font-size:.72rem;color:var(--gr);margin-bottom:10px;line-height:1.6;">✓ Pagas al llegar. Av. Providencia 1234.</div>'+
+    '<button class="bsm pri" style="width:100%;padding:12px;font-size:.84rem;margin-top:3px;" id="confirmBtn" onclick="confirmBook()">CONFIRMAR RESERVA ✂</button>'+
+    '</div></div>'+
+    '</div></div>';
+}
+
+function initBook(){
+  buildDates();
+  buildSlots();
+  BS = {srv:null,barber:null,date:null,time:null,pay:'transfer'};
+  var first = document.querySelector('.dchip:not(.dis)');
+  if(first){ first.classList.add('on'); BS.date=first.dataset.label; }
+}
+
+function buildDates(){
+  var c=document.getElementById('dateRow'); if(!c)return; c.innerHTML='';
+  var t=new Date();
+  for(var i=0;i<14;i++){
+    var d=new Date(t); d.setDate(t.getDate()+i);
+    var isDis=d.getDay()===0;
+    var ch=document.createElement('div');
+    ch.className='dchip'+(isDis?' dis':'');
+    ch.innerHTML='<div class="dn">'+DAYS[d.getDay()]+'</div><div class="dd">'+d.getDate()+'</div>';
+    ch.dataset.label=d.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+    if(!isDis){
+      ch.addEventListener('click',function(ev){
+        document.querySelectorAll('.dchip').forEach(function(c){c.classList.remove('on');});
+        ev.currentTarget.classList.add('on');
+        BS.date=ev.currentTarget.dataset.label;
+        buildSlots(); updSum();
+      });
+    }
+    c.appendChild(ch);
+  }
+}
+
+function buildSlots(){
+  var c=document.getElementById('slotWrap'); if(!c)return; c.innerHTML='';
+  TIMES.forEach(function(t){
+    var taken=BOOKINGS.some(function(b){return b.time===t&&b.date===BS.date&&b.barber===(BS.barber?BS.barber.name:null);});
+    var el=document.createElement('div');
+    el.className='slot'+(taken?' tk':'');
+    el.textContent=t;
+    if(!taken){
+      el.addEventListener('click',function(){
+        document.querySelectorAll('.slot:not(.tk)').forEach(function(s){s.classList.remove('on');});
+        el.classList.add('on'); BS.time=t; updSum();
+      });
+    }
+    c.appendChild(el);
+  });
+}
+
+function selSrv(el){
+  document.querySelectorAll('.scard').forEach(function(s){s.classList.remove('on');}); el.classList.add('on');
+  BS.srv={id:el.dataset.sid,name:el.dataset.name,price:+el.dataset.price,dur:el.dataset.dur};
+  updSum();
+}
+function selBar(el){
+  document.querySelectorAll('.bcard').forEach(function(b){b.classList.remove('on');}); el.classList.add('on');
+  BS.barber={id:el.dataset.bid,name:el.dataset.bname};
+  buildSlots(); updSum();
+}
+function selPay(m){
+  BS.pay=m;
+  document.querySelectorAll('.popt').forEach(function(p){p.classList.remove('on');});
+  var po=document.getElementById('po-'+m); if(po) po.classList.add('on');
+  var td=document.getElementById('tdBox');    if(td) td.style.display=m==='transfer'?'block':'none';
+  var lb=document.getElementById('localBox'); if(lb) lb.style.display=m==='local'?'block':'none';
+}
+function updSum(){
+  var has=BS.srv||BS.barber;
+  var e=document.getElementById('sumE'), d=document.getElementById('sumD');
+  if(!e||!d)return;
+  e.style.display=has?'none':'block'; d.style.display=has?'block':'none';
+  if(BS.srv){
+    var ss=document.getElementById('sv-s');   if(ss)ss.textContent=BS.srv.name;
+    var st=document.getElementById('sv-tot'); if(st)st.textContent='$'+BS.srv.price.toLocaleString('es-CL');
+    var sd=document.getElementById('sv-du');  if(sd)sd.textContent=BS.srv.dur;
+  }
+  if(BS.barber){var sb=document.getElementById('sv-b');  if(sb)sb.textContent=BS.barber.name;}
+  if(BS.date)  {var sdt=document.getElementById('sv-d'); if(sdt)sdt.textContent=BS.date;}
+  if(BS.time)  {var stm=document.getElementById('sv-t'); if(stm)stm.textContent=BS.time+' hrs';}
+}
+
+async function confirmBook(){
+  var nm=document.getElementById('bk-name')  ?document.getElementById('bk-name').value.trim():'';
+  var ph=document.getElementById('bk-phone') ?document.getElementById('bk-phone').value.trim():'';
+  var nt=document.getElementById('bk-notes') ?document.getElementById('bk-notes').value.trim():'';
+  if(!nm||!ph){toast('⚠ Datos','Ingresa nombre y teléfono.',true);return;}
+  if(!BS.srv)   {toast('⚠ Servicio','Selecciona un servicio.',true);return;}
+  if(!BS.barber){toast('⚠ Barbero','Selecciona un barbero.',true);return;}
+  if(!BS.date)  {toast('⚠ Fecha','Selecciona una fecha.',true);return;}
+  if(!BS.time)  {toast('⚠ Hora','Selecciona una hora.',true);return;}
+
+  var btn=document.getElementById('confirmBtn');
+  btn.disabled=true; btn.textContent='Guardando...';
+
+  var newId='BU-'+Date.now();
+  var row={
+    id:newId,
+    client_id:(CU.type==='client'&&CU.id!=='guest')?CU.id:null,
+    client_email:CU.email||'',
+    client_name:nm, phone:ph,
+    srv:BS.srv.name, price:BS.srv.price, dur:BS.srv.dur,
+    barber:BS.barber.name, date:BS.date, time:BS.time,
+    pay:BS.pay, status:'confirmado', notes:nt
+  };
+
+  var r=await DB.from('bookings').insert(row);
+  if(r.error){toast('❌ Error',r.error.message,true);btn.disabled=false;btn.textContent='CONFIRMAR RESERVA ✂';return;}
+
+  BOOKINGS.unshift(row); buildNav();
+
+  document.getElementById('mConDet').innerHTML=[
+    ['ID','<b style="color:var(--or)">'+newId+'</b>'],
+    ['Cliente',nm],['Teléfono',ph],
+    ['Servicio',BS.srv.name],['Barbero',BS.barber.name],
+    ['Fecha',BS.date],['Hora',BS.time+' hrs'],
+    ['Total','<b style="color:var(--or)">$'+BS.srv.price.toLocaleString('es-CL')+' CLP</b>'],
+    ['Pago',BS.pay==='transfer'?'🏦 Transferencia':'💵 En el local']
+  ].map(function(p){return '<div class="mdr"><span class="mk">'+p[0]+'</span><span class="mv">'+p[1]+'</span></div>';}).join('');
+
+  document.getElementById('mConPay').innerHTML=BS.pay==='transfer'
+    ?'<b>Transfiere $'+BS.srv.price.toLocaleString('es-CL')+' CLP</b> a Banco de Chile cta 00-123-456789-0. Referencia: <b>'+newId+'</b>'
+    :'<b>Pagas al llegar.</b> '+BS.date+' a las '+BS.time+' hrs. Av. Providencia 1234.';
+
+  showM('mConfirm');
+  btn.disabled=false; btn.textContent='CONFIRMAR RESERVA ✂';
+}
+
+/* MY BOOKINGS */
+function pgMyBookings(){
+  var bks=myBk();
+  if(!bks.length)return'<div style="text-align:center;padding:50px 20px;color:var(--gy);"><div style="font-size:2.8rem;margin-bottom:12px;">📭</div><div style="margin-bottom:14px;">Aún no tienes reservas</div><button class="bsm pri" style="padding:11px 24px;" onclick="goPage(\'book\',null)">Agendar hora →</button></div>';
+  return'<div class="tw"><div class="tscroll"><table><thead><tr><th>Servicio</th><th>Barbero</th><th>Fecha</th><th>Hora</th><th>Total</th><th>Pago</th></tr></thead><tbody>'+
+  bks.map(function(b){return'<tr><td><strong>'+b.srv+'</strong></td><td>'+b.barber+'</td><td style="color:var(--gy);">'+b.date+'</td><td style="color:var(--or);font-weight:700;">'+b.time+' hrs</td><td style="color:var(--or);font-weight:700;">$'+b.price.toLocaleString('es-CL')+'</td><td>'+(b.pay==='transfer'?'<span class="chip cy2">🏦</span>':'<span class="chip cg">💵</span>')+'</td></tr>';}).join('')+
+  '</tbody></table></div></div>';
+}
+
+/* MY SCHEDULE */
+function pgMySchedule(){
+  return'<div class="tw"><div class="tf"><input class="si" id="schQ" placeholder="🔍 Buscar..." oninput="filterSch()" style="min-width:160px;"/></div>'+
+  '<div class="tscroll"><table><thead><tr><th>Cliente</th><th>Servicio</th><th>Fecha</th><th>Hora</th><th>Pago</th></tr></thead><tbody id="schTb">'+schRows(myBarBk())+'</tbody></table></div></div>';
+}
+function schRows(bks){
+  if(!bks.length)return'<tr><td colspan="5" style="text-align:center;color:var(--gy);padding:24px;">Sin reservas asignadas.</td></tr>';
+  return bks.map(function(b){return'<tr><td><strong>'+b.client_name+'</strong><br><span style="font-size:.66rem;color:var(--gy);">'+b.phone+'</span></td><td>'+b.srv+'</td><td style="color:var(--gy);">'+b.date+'</td><td style="color:var(--or);font-weight:700;">'+b.time+' hrs</td><td>'+(b.pay==='transfer'?'<span class="chip cy2">🏦</span>':'<span class="chip cg">💵</span>')+'</td></tr>';}).join('');
+}
+function filterSch(){var q=document.getElementById('schQ')?document.getElementById('schQ').value.toLowerCase():'';var tb=document.getElementById('schTb');if(tb)tb.innerHTML=schRows(myBarBk().filter(function(b){return b.client_name.toLowerCase().includes(q)||b.srv.toLowerCase().includes(q);}));}
+
+/* MY STATS */
+function pgMyStats(){
+  var bks=myBarBk(); var sc={};
+  bks.forEach(function(b){sc[b.srv]=(sc[b.srv]||0)+1;});
+  var top=Object.entries(sc).sort(function(a,b){return b[1]-a[1];})[0];
+  return'<div class="sg3">'+sc3('or','📋',bks.length,'Mis reservas')+sc3('cy','🏆',top?top[0].split(' ')[0]:'—','Top servicio')+sc3('pu','📅',[...new Set(bks.map(function(b){return b.date;}))].length,'Días trabajados')+'</div>'+
+  '<div class="tw" style="padding:16px;">'+(Object.entries(sc).length?Object.entries(sc).sort(function(a,b){return b[1]-a[1];}).map(function(p){return'<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bd);"><span style="font-size:.8rem;">'+p[0]+'</span><div style="display:flex;align-items:center;gap:10px;"><div style="width:80px;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;"><div style="height:100%;width:'+Math.round(p[1]/bks.length*100)+'%;background:var(--or);border-radius:2px;"></div></div><span style="font-size:.8rem;color:var(--or);font-weight:700;">'+p[1]+'</span></div></div>';}).join(''):'<p style="color:var(--gy);text-align:center;padding:16px;">Sin datos.</p>')+'</div>';
+}
+
+/* ALL BOOKINGS */
+function pgAllBookings(){
+  return'<div class="sec-hd"><h3>TODAS LAS RESERVAS</h3><div style="display:flex;gap:7px;"><button class="bsm" onclick="exportCSV()">⬇ CSV</button><button class="bsm pri" onclick="showM(\'mNewBook\')">+ Nueva</button></div></div>'+
+  '<div class="tw"><div class="tf">'+
+  '<input class="si" id="bkQ" placeholder="🔍 Buscar..." oninput="filterBk()" style="min-width:140px;"/>'+
+  '<select class="si" id="bkBF" onchange="filterBk()"><option value="">Todos</option><option>Karen Monsalve</option><option>Ignacio Pérez</option><option>Franco Jaramillo</option></select>'+
+  '<select class="si" id="bkPF" onchange="filterBk()"><option value="">Todo pago</option><option value="transfer">Transferencia</option><option value="local">Local</option></select>'+
+  '</div><div class="tscroll"><table><thead><tr><th>Cliente</th><th>Servicio</th><th>Barbero</th><th>Fecha/Hora</th><th>Total</th><th>Pago</th><th>✕</th></tr></thead><tbody id="allTb">'+allRows(BOOKINGS)+'</tbody></table></div></div>';
+}
+function allRows(bks){
+  if(!bks.length)return'<tr><td colspan="7" style="text-align:center;color:var(--gy);padding:22px;">Sin reservas.</td></tr>';
+  return bks.map(function(b){return'<tr><td><strong>'+b.client_name+'</strong><br><span style="font-size:.66rem;color:var(--gy);">'+b.phone+'</span></td><td>'+b.srv+'</td><td>'+b.barber.split(' ')[0]+'</td><td style="color:var(--gy);font-size:.75rem;">'+b.date+' '+b.time+'</td><td style="color:var(--or);font-weight:700;">$'+b.price.toLocaleString('es-CL')+'</td><td>'+(b.pay==='transfer'?'<span class="chip cy2">🏦</span>':'<span class="chip cg">💵</span>')+'</td><td><button class="bsm dan" onclick="delBk(\''+b.id+'\')">✕</button></td></tr>';}).join('');
+}
+function filterBk(){
+  var q=document.getElementById('bkQ')?document.getElementById('bkQ').value.toLowerCase():'';
+  var bf=document.getElementById('bkBF')?document.getElementById('bkBF').value:'';
+  var pf=document.getElementById('bkPF')?document.getElementById('bkPF').value:'';
+  var f=BOOKINGS.filter(function(b){
+    if(q&&!b.client_name.toLowerCase().includes(q)&&!b.srv.toLowerCase().includes(q))return false;
+    if(bf&&b.barber!==bf)return false;
+    if(pf&&b.pay!==pf)return false;
+    return true;
+  });
+  var tb=document.getElementById('allTb'); if(tb)tb.innerHTML=allRows(f);
+}
+async function delBk(id){
+  var r=await DB.from('bookings').delete().eq('id',id);
+  if(r.error){toast('❌ Error',r.error.message,true);return;}
+  BOOKINGS=BOOKINGS.filter(function(b){return b.id!==id;}); buildNav(); filterBk(); toast('🗑 Eliminada','Reserva eliminada.');
+}
+async function saveManual(){
+  var nm=document.getElementById('mn-name')?document.getElementById('mn-name').value.trim():'';
+  var ph=document.getElementById('mn-phone')?document.getElementById('mn-phone').value.trim():'';
+  var sv=document.getElementById('mn-srv')?document.getElementById('mn-srv').value:'';
+  var bar=document.getElementById('mn-barber')?document.getElementById('mn-barber').value:'';
+  var ti=document.getElementById('mn-time')?document.getElementById('mn-time').value:'';
+  var pa=document.getElementById('mn-pay')?document.getElementById('mn-pay').value:'local';
+  if(!nm||!ph||!sv||!bar){toast('⚠ Datos','Completa todos los campos.',true);return;}
+  var pts=sv.split('|'); var newId='BU-'+Date.now();
+  var today=new Date().toLocaleDateString('es-CL',{day:'numeric',month:'short'});
+  var btn=document.getElementById('mnBtn'); btn.disabled=true; btn.textContent='Guardando...';
+  var row={id:newId,client_id:null,client_email:'',client_name:nm,phone:ph,srv:pts[0],price:+pts[1],dur:pts[2],barber:bar,date:today,time:ti,pay:pa,status:'confirmado',notes:''};
+  var r=await DB.from('bookings').insert(row);
+  if(r.error){toast('❌ Error',r.error.message,true);}
+  else{BOOKINGS.unshift(row);buildNav();hideM('mNewBook');toast('✓ Creada',nm+' — '+pts[0]);var tb=document.getElementById('allTb');if(tb)tb.innerHTML=allRows(BOOKINGS);}
+  btn.disabled=false; btn.textContent='Guardar';
+}
+
+/* CALENDAR */
+function pgCalendar(){
+  var now=new Date(); var y=now.getFullYear(),m=now.getMonth();
+  var mn=now.toLocaleDateString('es-CL',{month:'long',year:'numeric'}).toUpperCase();
+  var dim=new Date(y,m+1,0).getDate(); var fd=new Date(y,m,1).getDay();
+  var cal=''; ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'].forEach(function(d){cal+='<div style="font-size:.56rem;color:var(--gy);text-align:center;padding:4px;letter-spacing:.07em;">'+d+'</div>';});
+  for(var i=0;i<fd;i++)cal+='<div></div>';
+  for(var day=1;day<=dim;day++){
+    var cnt=BOOKINGS.filter(function(b){return b.date&&b.date.startsWith(day+' ');}).length;
+    var isT=day===now.getDate();
+    cal+='<div onclick="showDay('+day+')" style="aspect-ratio:1;border-radius:6px;background:'+(isT?'var(--or)':'var(--bg4)')+';border:1px solid '+(cnt?'rgba(34,197,94,.3)':'var(--bd)')+';display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.72rem;cursor:pointer;transition:all .15s;position:relative;" onmouseover="this.style.borderColor=\'var(--or)\'" onmouseout="this.style.borderColor=\''+(cnt?'rgba(34,197,94,.3)':'var(--bd)')+'\'">'+
+    day+(cnt?'<div style="position:absolute;bottom:2px;width:4px;height:4px;border-radius:50%;background:var(--gr);"></div>':'')+'</div>';
+  }
+  return'<div class="cal-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">'+
+  '<div><div class="sec-hd"><h3>'+mn+'</h3></div><div class="tw" style="padding:14px;"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;">'+cal+'</div></div></div>'+
+  '<div><div class="sec-hd"><h3>CITAS DEL DÍA</h3></div><div class="tw" style="padding:14px;min-height:160px;" id="dayDet"><p style="color:var(--gy);font-size:.78rem;">Selecciona un día.</p></div></div>'+
+  '</div>';
+}
+function showDay(d){
+  var bks=BOOKINGS.filter(function(b){return b.date&&b.date.startsWith(d+' ');});
+  var el=document.getElementById('dayDet'); if(!el)return;
+  el.innerHTML=bks.length?bks.map(function(b){return'<div style="padding:9px;background:var(--bg4);border:1px solid var(--bd);border-radius:7px;margin-bottom:7px;"><strong>'+b.client_name+'</strong> — '+b.srv+'<br><span style="font-size:.68rem;color:var(--gy);">'+b.barber+' · '+b.time+' · $'+b.price.toLocaleString('es-CL')+'</span></div>';}).join(''):'<p style="color:var(--gy);font-size:.78rem;">Sin reservas.</p>';
+}
+
+/* FINANCE */
+function pgFinance(){
+  var tot=BOOKINGS.reduce(function(s,b){return s+b.price;},0);
+  var tT=BOOKINGS.filter(function(b){return b.pay==='transfer';}).reduce(function(s,b){return s+b.price;},0);
+  var lT=BOOKINGS.filter(function(b){return b.pay==='local';}).reduce(function(s,b){return s+b.price;},0);
+  var barRows=BARBERS.map(function(b){var bks=BOOKINGS.filter(function(bk){return bk.barber===b.name;});var rev=bks.reduce(function(s,bk){return s+bk.price;},0);var pct=tot?Math.round(rev/tot*100):0;return'<div style="padding:12px 0;border-bottom:1px solid var(--bd);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-weight:700;">'+b.icon+' '+b.name+'</span><span style="color:var(--or);font-weight:700;">$'+Math.round(rev/1000)+'k</span></div><div style="height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:var(--or);border-radius:2px;"></div></div><div style="font-size:.64rem;color:var(--gy);margin-top:3px;">'+bks.length+' servicios · '+pct+'%</div></div>';}).join('');
+  var srvRev={};BOOKINGS.forEach(function(b){srvRev[b.srv]=(srvRev[b.srv]||0)+b.price;});
+  var srvRows=Object.keys(srvRev).length?Object.entries(srvRev).sort(function(a,b){return b[1]-a[1];}).map(function(p){return'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd);font-size:.78rem;"><span>'+p[0]+'</span><span style="color:var(--or);font-weight:700;">$'+p[1].toLocaleString('es-CL')+'</span></div>';}).join(''):'<p style="color:var(--gy);text-align:center;padding:16px;">Sin datos.</p>';
+  return'<div class="sg4">'+sc('or','💰','$'+Math.round(tot/1000)+'k','Ingresos')+sc('cy','🏦','$'+Math.round(tT/1000)+'k','Transferencias')+sc('gr','💵','$'+Math.round(lT/1000)+'k','En local')+sc('pu','📊',BOOKINGS.length,'Servicios')+'</div>'+
+  '<div class="fin-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">'+
+  '<div><div class="sec-hd"><h3>POR BARBERO</h3></div><div class="tw" style="padding:14px;">'+barRows+'</div></div>'+
+  '<div><div class="sec-hd"><h3>POR SERVICIO</h3></div><div class="tw" style="padding:14px;">'+srvRows+'</div></div>'+
+  '</div>';
+}
+
+/* PAYMENTS */
+function pgPayments(){
+  var hist=BOOKINGS.length?BOOKINGS.map(function(b){return'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);"><div><strong style="font-size:.78rem;">'+b.client_name+'</strong><br><span style="font-size:.66rem;color:var(--gy);">'+b.srv+' · '+b.time+' · '+b.date+'</span></div><div style="text-align:right;"><span style="color:var(--or);font-weight:700;">$'+b.price.toLocaleString('es-CL')+'</span><br>'+(b.pay==='transfer'?'<span class="chip cy2" style="font-size:.56rem;">🏦</span>':'<span class="chip cg" style="font-size:.56rem;">💵</span>')+'</div></div>';}).join(''):'<p style="color:var(--gy);text-align:center;padding:16px;">Sin pagos.</p>';
+  return'<div class="pay-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">'+
+  '<div class="tw" style="padding:18px;"><div style="font-size:.66rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--or);margin-bottom:12px;">🏦 DATOS BANCARIOS</div>'+
+  '<div class="trow"><span class="tk2">Banco</span><span>Banco de Chile</span></div>'+
+  '<div class="trow"><span class="tk2">Titular</span><span>Barber Urban SpA</span></div>'+
+  '<div class="trow"><span class="tk2">RUT</span><span>12.345.678-9 <button class="cpb" onclick="copyTxt(\'12.345.678-9\')">Copiar</button></span></div>'+
+  '<div class="trow"><span class="tk2">Cuenta</span><span>00-123-456789-0 <button class="cpb" onclick="copyTxt(\'00-123-456789-0\')">Copiar</button></span></div>'+
+  '<div class="trow"><span class="tk2">Correo</span><span style="font-size:.7rem;">pagos@barberurban.cl <button class="cpb" onclick="copyTxt(\'pagos@barberurban.cl\')">Copiar</button></span></div>'+
+  '<p style="font-size:.68rem;color:var(--gy);margin-top:11px;line-height:1.7;">Enviar comprobante con ID de reserva.</p></div>'+
+  '<div class="tw" style="padding:18px;"><div style="font-size:.66rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--or);margin-bottom:12px;">📋 HISTORIAL</div><div style="max-height:300px;overflow-y:auto;">'+hist+'</div></div>'+
+  '</div>';
+}
+
+/* STAFF */
+function pgStaff(){
+  return'<div class="stf-wrap" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">'+
+  BARBERS.map(function(b,i){
+    var bks=BOOKINGS.filter(function(bk){return bk.barber===b.name;});
+    var rev=bks.reduce(function(s,bk){return s+bk.price;},0);
+    var bg=i===0?'#2a0020,#400030':i===1?'#08101a,#101830':'#001008,#001e10';
+    var border=i===0?'border:1px solid rgba(255,214,0,.3);border-top:3px solid var(--ye);':'border:1px solid var(--bd);';
+    return'<div style="background:var(--bg3);'+border+'border-radius:12px;padding:20px;text-align:center;">'+
+    '<div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,'+bg+');margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:1.7rem;">'+b.icon+'</div>'+
+    '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.15rem;letter-spacing:.04em;margin-bottom:4px;">'+b.name+'</div>'+
+    (i===0?'<span class="chip cy3">👑 Jefa</span>':'<span class="chip co">Barber</span>')+
+    '<div style="display:flex;justify-content:center;gap:16px;margin-top:14px;padding-top:12px;border-top:1px solid var(--bd);">'+
+    '<div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.5rem;color:var(--or);">'+bks.length+'</div><div style="font-size:.58rem;color:var(--gy);text-transform:uppercase;">Reservas</div></div>'+
+    '<div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.2rem;color:var(--gr);">$'+Math.round(rev/1000)+'k</div><div style="font-size:.58rem;color:var(--gy);text-transform:uppercase;">Ingresos</div></div>'+
+    '</div></div>';
+  }).join('')+'</div>';
+}
+
+/* CLIENTS */
+function pgClients(){
+  var rows=CLIENTS.length?CLIENTS.map(function(c){
+    var bks=BOOKINGS.filter(function(b){return b.client_email===c.email||b.client_id===c.id;});
+    return'<tr><td><strong>'+c.name+'</strong></td><td style="color:var(--gy);font-size:.74rem;">'+c.email+'</td><td style="color:var(--gy);">'+c.phone+'</td><td>'+bks.length+'</td><td style="color:var(--or);font-weight:700;">$'+bks.reduce(function(s,b){return s+b.price;},0).toLocaleString('es-CL')+'</td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--gy);padding:22px;">Sin clientes registrados.</td></tr>';
+  return'<div class="sec-hd"><h3>CLIENTES</h3><span style="font-size:.76rem;color:var(--gy);">'+CLIENTS.length+' registrados</span></div>'+
+  '<div class="tw"><div class="tscroll"><table><thead><tr><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Reservas</th><th>Total</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+}
+
+/* CONFIG */
+function pgConfig(){
+  return'<div class="cfg-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">'+
+  '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:11px;padding:20px;">'+
+  '<h3 style="font-family:\'Bebas Neue\',sans-serif;font-size:1rem;color:var(--or);margin-bottom:14px;">🏪 Datos del negocio</h3>'+
+  '<div class="fld"><label class="flbl">Nombre</label><input type="text" class="finp" value="Barber Urban"/></div>'+
+  '<div class="fld"><label class="flbl">Dirección</label><input type="text" class="finp" value="Av. Providencia 1234, Santiago"/></div>'+
+  '<div class="fld"><label class="flbl">Teléfono</label><input type="text" class="finp" value="+56 9 8765 4321"/></div>'+
+  '<div class="fld"><label class="flbl">Instagram</label><input type="text" class="finp" value="@barberurban"/></div>'+
+  '<button class="bsm pri" style="width:100%;padding:10px;margin-top:4px;" onclick="toast(\'✓ Guardado\',\'Configuración actualizada.\')">Guardar cambios</button>'+
+  '</div>'+
+  '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:11px;padding:20px;">'+
+  '<h3 style="font-family:\'Bebas Neue\',sans-serif;font-size:1rem;color:var(--or);margin-bottom:14px;">🔑 Contraseñas staff</h3>'+
+  '<div class="fld"><label class="flbl">Usuario</label><select class="finp" id="cfg-usr"><option>Karen Monsalve</option><option>Ignacio Pérez</option><option>Franco Jaramillo</option></select></div>'+
+  '<div class="fld"><label class="flbl">Nueva contraseña</label><input type="password" class="finp" id="cfg-p1" placeholder="Mínimo 6 caracteres"/></div>'+
+  '<div class="fld"><label class="flbl">Confirmar</label><input type="password" class="finp" id="cfg-p2" placeholder="Repetir contraseña"/></div>'+
+  '<button class="bsm pri" style="width:100%;padding:10px;margin-top:4px;" onclick="savePw()">Actualizar en Supabase</button>'+
+  '</div></div>';
+}
+async function savePw(){
+  var p1=document.getElementById('cfg-p1')?document.getElementById('cfg-p1').value:'';
+  var p2=document.getElementById('cfg-p2')?document.getElementById('cfg-p2').value:'';
+  if(!p1||p1!==p2){toast('⚠ Error','Contraseñas no coinciden.',true);return;}
+  if(p1.length<6){toast('⚠ Débil','Mínimo 6 caracteres.',true);return;}
+  var usr=document.getElementById('cfg-usr')?document.getElementById('cfg-usr').value:'';
+  var key=Object.keys(STAFF).find(function(k){return STAFF[k].name===usr;});
+  if(!key){toast('⚠ Error','Usuario no encontrado.',true);return;}
+  var r=await DB.from('staff').update({pw:p1}).eq('id',key);
+  if(r.error){toast('❌ Error',r.error.message,true);return;}
+  STAFF[key].pw=p1;
+  if(document.getElementById('cfg-p1'))document.getElementById('cfg-p1').value='';
+  if(document.getElementById('cfg-p2'))document.getElementById('cfg-p2').value='';
+  toast('✓ Actualizada','Contraseña de '+usr+' guardada.');
+}
+
+/* QR PAGE */
+function pgQR(){
+  var url=window.location.origin+window.location.pathname+'?guest=1';
+  return'<div style="max-width:580px;margin:0 auto;">'+
+  '<div style="background:rgba(255,101,0,.06);border:1px solid rgba(255,101,0,.2);border-radius:14px;padding:24px;text-align:center;margin-bottom:18px;">'+
+  '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.6rem;letter-spacing:.04em;margin-bottom:10px;">📱 CÓDIGO QR DE RESERVA</div>'+
+  '<div style="font-size:.82rem;color:var(--gy);margin-bottom:20px;line-height:1.7;">Tus clientes escanean este QR y agendan su hora <b style="color:var(--or);">sin necesidad de registrarse</b>. Imprímelo o compártelo en redes sociales.</div>'+
+  '<div id="qrCanvas" class="qr-wrap" style="margin:0 auto 16px;display:inline-block;"></div><br>'+
+  '<div style="background:var(--bg4);border:1px solid var(--bd);border-radius:8px;padding:10px;font-size:.72rem;color:var(--gy);margin-bottom:14px;word-break:break-all;">'+url+'</div>'+
+  '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">'+
+  '<button class="bsm pri" onclick="dlQR()" style="padding:10px 22px;">⬇ Descargar QR</button>'+
+  '<button class="bsm" onclick="copyTxt(\''+url+'\')" style="padding:10px 22px;">📋 Copiar link</button>'+
+  '</div></div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'+
+  '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:18px;"><div style="font-size:1.4rem;margin-bottom:8px;">📸</div><div style="font-weight:700;margin-bottom:5px;font-size:.88rem;">Instagram</div><div style="font-size:.76rem;color:var(--gy);line-height:1.7;">Sube el QR a tus historias o usa el sticker de enlace con la URL para que tus seguidores agenden directo.</div></div>'+
+  '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:18px;"><div style="font-size:1.4rem;margin-bottom:8px;">🖨️</div><div style="font-weight:700;margin-bottom:5px;font-size:.88rem;">Imprimir</div><div style="font-size:.76rem;color:var(--gy);line-height:1.7;">Imprime el QR y ponlo en la entrada o caja de la barbería para clientes que visiten el local.</div></div>'+
+  '</div></div>';
+}
+
+function buildQR(){
+  var el=document.getElementById('qrCanvas'); if(!el)return;
+  el.innerHTML='';
+  var url=window.location.origin+window.location.pathname+'?guest=1';
+  try{
+    new QRCode(el,{text:url,width:160,height:160,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+  }catch(e){el.innerHTML='<p style="color:var(--re);font-size:.78rem;padding:16px;">Error: '+e.message+'</p>';}
+}
+
+function dlQR(){
+  var canvas=document.querySelector('#qrCanvas canvas');
+  if(canvas){var a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download='barber-urban-qr.png';a.click();toast('✓ Descargado','QR guardado como PNG.');return;}
+  var img=document.querySelector('#qrCanvas img');
+  if(img){var a2=document.createElement('a');a2.href=img.src;a2.download='barber-urban-qr.png';a2.click();toast('✓ Descargado','QR guardado.');return;}
+  toast('⚠ Error','QR no disponible aún.',true);
+}
+
+/* EXPORT */
+function exportCSV(){
+  if(!BOOKINGS.length){toast('⚠ Sin datos','No hay reservas.');return;}
+  var h='ID,Cliente,Telefono,Servicio,Precio,Barbero,Fecha,Hora,Pago';
+  var rows=BOOKINGS.map(function(b){return[b.id,b.client_name,b.phone,b.srv,b.price,b.barber,b.date,b.time,b.pay].join(',');});
+  var blob=new Blob([h+'\n'+rows.join('\n')],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='barber-urban-'+new Date().toISOString().split('T')[0]+'.csv';a.click();
+  toast('✓ Exportado','CSV descargado.');
+}
+
+/* HELPERS */
+function sc(ac, ic, val, lbl){
+  return'<div class="sc" style="--ac:var(--'+ac+')"><div class="sc-ic">'+ic+'</div><div class="sc-n">'+val+'</div><div class="sc-l">'+lbl+'</div></div>';
+}
+function sc3(ac, ic, val, lbl){ return sc(ac,ic,val,lbl); }
+
+function showM(id){ var el=document.getElementById(id); if(el) el.classList.remove('hide'); }
+function hideM(id){ var el=document.getElementById(id); if(el) el.classList.add('hide'); }
+function shake(id){ var el=document.getElementById(id); if(!el)return; el.classList.add('shake'); setTimeout(function(){el.classList.remove('shake');},500); }
+function copyTxt(t){ navigator.clipboard.writeText(t).then(function(){toast('✓ Copiado',t);}); }
+
+function toast(title, msg, isErr){
+  document.getElementById('tTit').textContent = title;
+  document.getElementById('tMsg').textContent  = msg;
+  var el = document.getElementById('toastEl');
+  el.className = 'toast-el'+(isErr?' err':'');
+  el.classList.add('on');
+  setTimeout(function(){ el.classList.remove('on'); }, 4200);
+}
+
+document.getElementById('mConfirm').addEventListener('click',function(e){if(e.target===this)hideM('mConfirm');});
+document.getElementById('mNewBook').addEventListener('click',function(e){if(e.target===this)hideM('mNewBook');});
+
+/* START */
+appInit();
+</script>
+</body>
+</html>
