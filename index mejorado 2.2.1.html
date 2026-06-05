@@ -359,11 +359,11 @@ td{padding:10px 13px;font-size:.78rem;}
       <div class="tpanel on" id="panel-login">
         <div class="fld">
           <label class="flbl">Correo electrónico</label>
-          <input type="email" class="finp" id="cl-email" placeholder="tu@correo.cl" autocomplete="email"/>
+          <input type="email" class="finp" id="cl-email" placeholder="tu@correo.cl" autocomplete="email" onkeydown="if(event.key==='Enter')loginClient()"/>
         </div>
         <div class="fld">
           <label class="flbl">Contraseña</label>
-          <input type="password" class="finp" id="cl-pw" placeholder="Tu contraseña" autocomplete="current-password"/>
+          <input type="password" class="finp" id="cl-pw" placeholder="Tu contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')loginClient()"/>
         </div>
         <button class="lbtn" id="btnLoginCl" onclick="loginClient()">Ingresar →</button>
       </div>
@@ -413,7 +413,7 @@ td{padding:10px 13px;font-size:.78rem;}
       </div>
       <div class="fld">
         <label class="flbl">Contraseña</label>
-        <input type="password" class="finp" id="staff-pw" placeholder="Ingresa tu contraseña" autocomplete="current-password"/>
+        <input type="password" class="finp" id="staff-pw" placeholder="Ingresa tu contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')loginStaff()"/>
       </div>
       <button class="lbtn" id="btnLoginSt" onclick="loginStaff()">Ingresar al panel →</button>
       <div class="lerr" id="staffErr"></div>
@@ -502,6 +502,12 @@ var selStaff = null;
 var attempts = {count:0, blockedUntil:0};
 var BS = {srv:null, barber:null, date:null, time:null, pay:'transfer'};
 
+/* ════════ HASH UTIL ════════ */
+async function hashPw(pw) {
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
 /* ════════ INIT ════════ */
 async function appInit() {
   show('scrLoader');
@@ -510,7 +516,11 @@ async function appInit() {
   try {
     var r = await DB.from('staff').select('*');
     if (!r.error && r.data && r.data.length > 0) {
-      r.data.forEach(function(s){ STAFF[s.id] = s; });
+      r.data.forEach(function(s){
+        var localPw = STAFF[s.id] ? STAFF[s.id].pw : undefined;
+        STAFF[s.id] = Object.assign({}, s);
+        if(localPw) STAFF[s.id].pw = localPw; // la contraseña local es siempre autoritativa
+      });
       setLT('✓ Conectado');
     } else {
       setLT('✓ Listo');
@@ -642,13 +652,22 @@ async function loginClient(){
   var btn = document.getElementById('btnLoginCl');
   btn.disabled=true; btn.textContent='Verificando...';
   try {
+    var hash = await hashPw(pw);
     /* Usar .eq() + .limit(1) — NUNCA .single() para evitar error 406 */
+    /* NOTA: la tabla clients en Supabase necesita política RLS:
+       CREATE POLICY "anon_select" ON clients FOR SELECT TO anon USING (true); */
     var r = await DB.from('clients').select('*').eq('email',email).limit(1);
     if(r.error) throw r.error;
     if(!r.data || r.data.length===0){
-      document.getElementById('clientErr').textContent = 'Correo no registrado. ¿Quieres crear una cuenta?';
+      /* Verificar si la tabla es accesible (detectar RLS bloqueado) */
+      var probe = await DB.from('clients').select('id', {count:'exact', head:true});
+      if(probe.error || probe.count === null){
+        document.getElementById('clientErr').textContent = 'Error de conexión con la base de datos. Verifica tu conexión.';
+      } else {
+        document.getElementById('clientErr').textContent = 'Correo no registrado. ¿Quieres crear una cuenta?';
+      }
       shake('cl-email');
-    } else if(r.data[0].pw !== pw){
+    } else if(r.data[0].pw !== hash){
       document.getElementById('clientErr').textContent = 'Contraseña incorrecta.';
       shake('cl-pw');
     } else {
@@ -691,8 +710,9 @@ async function registerClient(){
       btn.disabled=false; btn.textContent='Crear cuenta →';
       return;
     }
+    var hash = await hashPw(pw);
     var newId = 'CL-'+Date.now();
-    var ins = await DB.from('clients').insert({id:newId,name:nm,phone:ph,email:em,pw:pw,role:'client'}).select();
+    var ins = await DB.from('clients').insert({id:newId,name:nm,phone:ph,email:em,pw:hash,role:'client'}).select();
     if(ins.error) throw ins.error;
     var created = ins.data[0];
     CU = Object.assign({}, created, {type:'client', avatar:'👤', color:'#00d4ff', bg:'#001018'});
